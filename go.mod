@@ -6,11 +6,13 @@ require (
 	github.com/kevin-chtw/tw_proto v0.0.0-20250620022541-fd4ab9574e8a
 	github.com/sirupsen/logrus v1.9.3
 	github.com/topfreegames/pitaya/v3 v3.0.0-beta.6
+	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de
 )
 
 replace github.com/kevin-chtw/tw_proto v0.0.0-20250620022541-fd4ab9574e8a => ../tw_proto
 
 require (
+	cloud.google.com/go/longrunning v0.5.5 // indirect
 	github.com/DataDog/datadog-go v4.8.3+incompatible // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect

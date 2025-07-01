@@ -3,6 +3,7 @@ package main
 import (
 	"strings"
 
+	"github.com/kevin-chtw/tw_game_svr/game"
 	"github.com/kevin-chtw/tw_game_svr/service"
 	"github.com/sirupsen/logrus"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
@@ -24,12 +25,17 @@ func main() {
 	defer app.Shutdown()
 
 	logrus.Infof("Pitaya server of type %s started", serverType)
+	game.InitGame(app)
 	initServices()
 	app.Start()
 }
 
 func initServices() {
-	gamesvr := service.NewGameSvc(app)
-	app.Register(gamesvr, component.WithName("game"), component.WithNameFunc(strings.ToLower))
-	app.RegisterRemote(gamesvr, component.WithName("game"), component.WithNameFunc(strings.ToLower))
+	matchsvc := service.NewMatchService(app)
+	app.Register(matchsvc, component.WithName("match"), component.WithNameFunc(strings.ToLower))
+	app.RegisterRemote(matchsvc, component.WithName("match"), component.WithNameFunc(strings.ToLower))
+
+	playersvc := service.NewPlayerService(app)
+	app.Register(playersvc, component.WithName("player"), component.WithNameFunc(strings.ToLower))
+	app.RegisterRemote(playersvc, component.WithName("player"), component.WithNameFunc(strings.ToLower))
 }
