@@ -46,7 +46,10 @@ func (t *Table) HandleStartGame(ctx context.Context, req *sproto.StartGameReq) {
 	// 设置10秒后自动结束游戏
 	t.timer = time.AfterFunc(10*time.Second, func() {
 		t.Status = "finished"
-
+		if t.timer != nil {
+			t.timer.Stop()
+			t.timer = nil
+		}
 	})
 }
 
@@ -62,7 +65,9 @@ func (t *Table) HandleCancelGame(ctx context.Context, req *sproto.CancelMatchReq
 
 func (t *Table) SendToMatch() error {
 	rsp := &cproto.CommonResponse{Err: cproto.ErrCode_OK}
-	if err := t.App.RPCTo(context.Background(), t.MatchServerId, "match.game.message", rsp, &sproto.Match2GameAck{}); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := t.App.RPCTo(ctx, t.MatchServerId, "match.game.message", rsp, &sproto.Match2GameAck{}); err != nil {
 		t.Status = "preparing" // 回滚状态
 		return err
 	}
