@@ -1,6 +1,7 @@
 package game
 
 import (
+	"strconv"
 	"sync"
 
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
@@ -22,16 +23,16 @@ func NewTableManager(app pitaya.Pitaya) *TableManager {
 }
 
 // GetTable 获取指定比赛和桌号的游戏桌
-func (tm *TableManager) Get(matchID, tableID string) *Table {
+func (tm *TableManager) Get(matchID, tableID int32) *Table {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
-	key := matchID + ":" + tableID
+	key := strconv.FormatInt(int64(matchID), 10) + ":" + strconv.FormatInt(int64(tableID), 10)
 	return tm.tables[key]
 }
 
 // LoadOrStore 加载或存储游戏桌
-func (tm *TableManager) LoadOrStore(matchID, tableID string) *Table {
-	key := matchID + ":" + tableID
+func (tm *TableManager) LoadOrStore(matchID, tableID int32) *Table {
+	key := strconv.FormatInt(int64(matchID), 10) + ":" + strconv.FormatInt(int64(tableID), 10)
 
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
@@ -42,15 +43,15 @@ func (tm *TableManager) LoadOrStore(matchID, tableID string) *Table {
 	}
 
 	// 创建新表
-	table := NewTable(matchID, tableID, tm.app)
+	table := NewTable(1, matchID, tableID, tm.app)
 	tm.tables[key] = table
 	return table
 }
 
 // Delete 删除指定比赛和桌号的游戏桌
-func (tm *TableManager) Delete(matchID, tableID string) {
+func (tm *TableManager) Delete(matchID, tableID int32) {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
-	key := matchID + ":" + tableID
+	key := strconv.FormatInt(int64(matchID), 10) + ":" + strconv.FormatInt(int64(tableID), 10)
 	delete(tm.tables, key)
 }

@@ -36,40 +36,61 @@ func (m *MatchService) AfterInit() {
 	// 初始化时可以加载持久化的match状态
 }
 
-// Message 处理匹配消息
+// Message 处理匹配服务消息
 func (m *MatchService) Message(ctx context.Context, req *sproto.Match2GameReq) {
-	switch {
-	case req.StartGameReq != nil:
-		if err := m.handleStartGame(ctx, req.StartGameReq); err != nil {
-			logrus.Errorf("Handle start game failed: %v", err)
-		}
-	case req.CancelMatchReq != nil:
-		m.handleCancelMatch(ctx, req.CancelMatchReq)
-	default:
-		logrus.Warnf("Unknown match message type: %v", req)
+	var err error
+	if req.GetAddTableReq() != nil {
+		err = m.handleAddTable(ctx, req)
+	}
+	if req.GetAddPlayerReq() != nil {
+		err = m.handleAddPlayer(ctx, req)
+	}
+
+	if req.GetCancelTableReq() != nil {
+		err = m.handleCancelTable(ctx, req)
+	}
+
+	if err != nil {
+		logrus.Errorf("MatchService error handling message: %v, error: %v", req, err)
 	}
 }
 
 // handleStartGame 处理开始游戏请求
-func (m *MatchService) handleStartGame(ctx context.Context, req *sproto.StartGameReq) error {
+func (m *MatchService) handleAddTable(ctx context.Context, req *sproto.Match2GameReq) error {
 	table := game.GetTableManager().LoadOrStore(req.Matchid, req.Tableid)
 	if table == nil {
-		return fmt.Errorf("failed to create table for match %s and table %s", req.Matchid, req.Tableid)
-
+		return fmt.Errorf("table not found for match %d, table %d", req.Matchid, req.Tableid)
 	}
-
-	table.HandleStartGame(ctx, req)
+	if table.Status != game.TableStatusPreparing {
+		return fmt.Errorf("table %d is not in preparing status", req.Tableid)
+	}
+	table.HandleStartGame(ctx, req.GetAddTableReq())
 	return nil
 }
 
-// handleCancelMatch 处理取消匹配请求
-func (m *MatchService) handleCancelMatch(ctx context.Context, req *sproto.CancelMatchReq) error {
+func (m *MatchService) handleAddPlayer(ctx context.Context, req *sproto.Match2GameReq) error {
 	table := game.GetTableManager().Get(req.Matchid, req.Tableid)
 	if table == nil {
-		return fmt.Errorf("failed to create table for match %s and table %s", req.Matchid, req.Tableid)
+		return fmt.Errorf("table not found for match %d, table %d", req.Matchid, req.Tableid)
+	}
+	if table.Status != game.TableStatusPreparing {
+		return fmt.Errorf("table %d is not in preparing status", req.Tableid)
 	}
 
-	table.HandleCancelGame(ctx, req)
-	game.GetTableManager().Delete(req.Matchid, req.Tableid)
+	table.HandleAddPlayer(ctx, req.GetAddPlayerReq())
+	return nil
+}
+
+func (m *MatchService) handleCancelTable(ctx context.Context, req *sproto.Match2GameReq) error {
+	table := game.GetTableManager().Get(req.Matchid, req.Tableid)
+	if table == nil {
+		return fmt.Errorf("table not found for match %d, table %d", req.Matchid, req.Tableid)
+	}
+	if table.Status != game.TableStatusPreparing {
+		return fmt.Errorf("table %d is not in preparing status", req.Tableid)
+	}
+
+	table.HandleCancelTable(ctx, req.GetCancelTableReq())
+	logrus.Infof("Game cancelled for match %d, table %d", req.Matchid, req.Tableid)
 	return nil
 }

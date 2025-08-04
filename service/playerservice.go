@@ -29,10 +29,7 @@ func (p *PlayerService) Message(ctx context.Context, req *cproto.GameReq) (*cpro
 		return nil, errors.New("user ID is empty")
 	}
 
-	player, err := game.GetPlayerManager().GetPlayer(userID)
-	if err != nil {
-		return nil, err
-	}
+	player := game.GetPlayerManager().GetPlayer(userID)
 	player.HandleMessage(ctx, req)
 	return &cproto.CommonResponse{
 		Err: 0,

@@ -16,7 +16,7 @@ func NewPlayerManager() *PlayerManager {
 }
 
 // GetPlayer 获取玩家实例
-func (pm *PlayerManager) GetPlayer(userID string) (*Player, error) {
+func (pm *PlayerManager) GetPlayer(userID string) *Player {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
@@ -25,5 +25,12 @@ func (pm *PlayerManager) GetPlayer(userID string) (*Player, error) {
 		player = NewPlayer(userID)
 		pm.players[userID] = player
 	}
-	return player, nil
+	return player
+}
+
+// DeletePlayer 删除玩家实例
+func (pm *PlayerManager) Delete(userID string) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+	delete(pm.players, userID)
 }
