@@ -137,7 +137,6 @@ func (t *Table) handleTableMsg(ctx context.Context, player *Player, req *cproto.
 // HandleStartGame 处理开始游戏请求
 func (t *Table) HandleStartGame(ctx context.Context, req *sproto.AddTableReq) {
 	t.Status = TableStatusPlaying
-	t.MatchServerId = req.MatchServerId
 	t.PlayerCount = req.PlayerCount
 
 	// 设置10秒后自动结束游戏
