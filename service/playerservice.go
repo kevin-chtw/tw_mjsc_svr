@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"errors"
 
 	"github.com/kevin-chtw/tw_game_svr/game"
 	"github.com/kevin-chtw/tw_proto/cproto"
+	"github.com/sirupsen/logrus"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/component"
 )
@@ -23,15 +23,14 @@ func NewPlayerService(app pitaya.Pitaya) *PlayerService {
 	}
 }
 
-func (p *PlayerService) Message(ctx context.Context, req *cproto.GameReq) (*cproto.CommonResponse, error) {
+func (p *PlayerService) Message(ctx context.Context, req *cproto.GameReq) {
+	logrus.Infof("Received player message: %v", req)
 	userID := p.app.GetSessionFromCtx(ctx).UID()
 	if userID == "" {
-		return nil, errors.New("user ID is empty")
+		logrus.Error("Received player message with empty user ID")
+		return
 	}
 
 	player := game.GetPlayerManager().GetPlayer(userID)
 	player.HandleMessage(ctx, req)
-	return &cproto.CommonResponse{
-		Err: 0,
-	}, nil
 }

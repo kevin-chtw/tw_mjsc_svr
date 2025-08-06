@@ -2,7 +2,6 @@ package game
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/kevin-chtw/tw_proto/cproto"
@@ -10,6 +9,13 @@ import (
 	"github.com/sirupsen/logrus"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 )
+
+type IGame interface {
+	// OnGameBegin 游戏开始
+	OnGameBegin(Table *Table)
+	// OnPlayerMsg 处理玩家消息
+	OnPlayerMsg(player *Player, req *cproto.TableMsgReq)
+}
 
 const (
 	// TableStatusPreparing 桌子状态：准备中
@@ -28,10 +34,13 @@ type Table struct {
 	MatchServerId string             // 匹配服务ID
 	Players       map[string]*Player // 玩家ID -> Player
 	Status        string             // "preparing", "playing", "finished"
-	PlayerCount   int32              // 玩家数量
-	CreateTime    int64
-	timer         *time.Timer
-	App           pitaya.Pitaya
+	app           pitaya.Pitaya
+	MatchType     int32  // 0: 普通匹配, 1: 房卡模式
+	ScoreBase     int32  // 分数基数
+	GameCount     int32  // 游戏局数
+	PlayerCount   int32  // 玩家数量
+	GameConfig    string // 游戏配置
+	game          IGame  // 游戏逻辑处理接口
 }
 
 // NewTable 创建新的游戏桌实例
@@ -44,23 +53,23 @@ func NewTable(gameId, matchID, tableID int32, app pitaya.Pitaya) *Table {
 		Players:       make(map[string]*Player),
 		PlayerCount:   0,
 		Status:        TableStatusPreparing,
-		CreateTime:    time.Now().Unix(),
-		App:           app,
+		app:           app,
+		game:          CreateGame(gameId),
 	}
 }
 
 // OnPlayerMsg 处理玩家消息
 func (t *Table) OnPlayerMsg(ctx context.Context, player *Player, req *cproto.GameReq) {
 	if req.GetEnterGameReq() != nil {
-		t.handleEnterGame(ctx, player, req.GetEnterGameReq())
+		t.handleEnterGame(player, req.GetEnterGameReq())
 	}
 	if req.GetTableMsgReq() != nil {
-		t.handleTableMsg(ctx, player, req.GetTableMsgReq())
+		t.game.OnPlayerMsg(player, req.GetTableMsgReq())
 	}
 }
 
 // handleEnterGame 处理玩家进入游戏请求
-func (t *Table) handleEnterGame(ctx context.Context, player *Player, req *cproto.EnterGameReq) {
+func (t *Table) handleEnterGame(player *Player, _ *cproto.EnterGameReq) {
 	if !t.isOnTable(player.ID) {
 		return // 玩家不在桌上
 	}
@@ -74,7 +83,7 @@ func (t *Table) handleEnterGame(ctx context.Context, player *Player, req *cproto
 	// 检查是否满足开赛条件
 	if t.isAllPlayersReady() {
 		t.Status = TableStatusPlaying
-		t.OnGameBegin()
+		t.game.OnGameBegin(t)
 	}
 }
 
@@ -107,7 +116,7 @@ func (t *Table) SendTablePlayer(player *Player) {
 
 func (t *Table) NewMsg() *cproto.GameAck {
 	return &cproto.GameAck{
-		Serverid: t.App.GetServerID(),
+		Serverid: t.app.GetServerID(),
 		Gameid:   t.GameID,
 		Tableid:  t.TableID,
 		Matchid:  t.MatchID,
@@ -130,48 +139,45 @@ func (t *Table) isAllPlayersReady() bool {
 	return true
 }
 
-func (t *Table) handleTableMsg(ctx context.Context, player *Player, req *cproto.TableMsgReq) {
-
-}
-
 // HandleStartGame 处理开始游戏请求
-func (t *Table) HandleStartGame(ctx context.Context, req *sproto.AddTableReq) {
-	t.Status = TableStatusPlaying
-	t.PlayerCount = req.PlayerCount
+func (t *Table) HandleAddTable(ctx context.Context, req *sproto.AddTableReq) *sproto.AddTableAck {
+	ack := &sproto.AddTableAck{
+		ErrorCode: int32(0), // 成功
+	}
 
-	// 设置10秒后自动结束游戏
-	t.timer = time.AfterFunc(10*time.Second, func() {
-		t.Status = "finished"
-		if t.timer != nil {
-			t.timer.Stop()
-			t.timer = nil
-		}
-	})
+	t.Status = TableStatusPreparing
+	t.MatchType = req.GetMatchType()
+	t.ScoreBase = req.GetScoreBase()
+	t.GameCount = req.GetGameCount()
+	t.PlayerCount = req.GetPlayerCount()
+	t.GameConfig = req.GetGameConfig()
+	return ack
 }
 
-func (t *Table) HandleAddPlayer(ctx context.Context, req *sproto.AddPlayerReq) error {
+func (t *Table) HandleAddPlayer(ctx context.Context, req *sproto.AddPlayerReq) *sproto.AddPlayerAck {
+	ack := &sproto.AddPlayerAck{
+		ErrorCode: int32(0), // 成功
+	}
 	if t.isOnTable(req.Playerid) {
-		return errors.New("Player already on table")
+		ack.ErrorCode = int32(1) // 玩家已在桌上
+		return ack
 	}
 
 	player := playerManager.GetPlayer(req.Playerid)
 	player.SetSeat(req.Seatnum)
 	player.AddScore(req.Score)
 	t.Players[req.Playerid] = player
-	return nil
+
+	return ack
 }
 
-func (t *Table) HandleCancelTable(ctx context.Context, req *sproto.CancelTableReq) error {
-	if t.Status != TableStatusPreparing {
-		logrus.Warnf("Table %d is not in preparing status, cannot cancel", t.TableID)
-		return errors.New("table not in preparing status")
+func (t *Table) HandleCancelTable(ctx context.Context, req *sproto.CancelTableReq) (ack *sproto.CancelTableAck) {
+	ack = &sproto.CancelTableAck{
+		ErrorCode: int32(0), // 成功
 	}
-	t.Status = TableStatusFinished
-	logrus.Infof("Table %d cancelled", t.TableID)
-	// 通知匹配服务
-	if err := t.SendToMatch(); err != nil {
-		logrus.Errorf("Failed to send cancel request to match service: %v", err)
-		return errors.New("failed to send cancel request to match service")
+	if t.Status == TableStatusPlaying {
+		ack.ErrorCode = int32(1)
+		return
 	}
 	// 清理玩家状态
 	for _, player := range t.Players {
@@ -182,14 +188,14 @@ func (t *Table) HandleCancelTable(ctx context.Context, req *sproto.CancelTableRe
 		playerManager.Delete(player.ID) // 从玩家管理器中删除玩家
 	}
 	tableManager.Delete(t.MatchID, t.TableID) // 从桌子管理器中删除
-	return nil
+	return ack
 }
 
 func (t *Table) SendToMatch() error {
 	rsp := &cproto.CommonResponse{Err: cproto.ErrCode_OK}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := t.App.RPCTo(ctx, t.MatchServerId, "match.game.message", rsp, &sproto.Match2GameAck{}); err != nil {
+	if err := t.app.RPCTo(ctx, t.MatchServerId, "match.game.message", rsp, &sproto.Match2GameAck{}); err != nil {
 		t.Status = "preparing" // 回滚状态
 		return err
 	}
@@ -203,7 +209,7 @@ func (t *Table) Broadcast(msg *cproto.GameAck) {
 			players = append(players, player.ID)
 		}
 	}
-	if m, err := t.App.SendPushToUsers("gamemsg", msg, players, "proxy"); err != nil {
+	if m, err := t.app.SendPushToUsers("gamemsg", msg, players, "proxy"); err != nil {
 		logrus.Errorf("send game message failed: %v", err)
 	} else {
 		logrus.Infof("broadcast game message to players: %v", m)
@@ -211,18 +217,11 @@ func (t *Table) Broadcast(msg *cproto.GameAck) {
 }
 
 func (t *Table) SendMsg(msg *cproto.GameAck, playerID string) error {
-	if m, err := t.App.SendPushToUsers("gamemsg", msg, []string{playerID}, "proxy"); err != nil {
+	if m, err := t.app.SendPushToUsers("gamemsg", msg, []string{playerID}, "proxy"); err != nil {
 		logrus.Errorf("send game message to player %s failed: %v", playerID, err)
 		return err
 	} else {
 		logrus.Infof("send game message to player %s: %v", playerID, m)
 	}
 	return nil
-}
-
-func (t *Table) OnGameBegin() {
-	// 这里可以添加游戏开始的逻辑，比如发牌、初始化游戏状态等
-	for _, player := range t.Players {
-		player.SetStatus("playing")
-	}
 }
