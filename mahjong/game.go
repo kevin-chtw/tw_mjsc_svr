@@ -2,13 +2,12 @@ package mahjong
 
 import (
 	"github.com/kevin-chtw/tw_game_svr/game"
-	"github.com/kevin-chtw/tw_proto/cproto"
 )
 
 type IGame interface {
 	CreatePlay() IPlay
 	OnStart()
-	OnReqMsg(seat int32, req *cproto.TableMsgReq)
+	OnReqMsg(seat int32, data []byte)
 }
 
 type Game struct {
@@ -17,10 +16,10 @@ type Game struct {
 	timer       *Timer
 	CurState    IState
 	nextState   IState
-	config      *Config
+	rule        *Rule
 	players     []*Player
-	increasedID int   // 当前请求ID
-	requestIDs  []int // 记录每个玩家的请求ID
+	increasedID int32   // 当前请求ID
+	requestIDs  []int32 // 记录每个玩家的请求ID
 
 	Play IPlay
 }
@@ -30,11 +29,12 @@ func NewGame(subGame IGame, t *game.Table) *Game {
 		IGame:       subGame,
 		Table:       t,
 		timer:       NewTimer(),
+		rule:        NewRule(),
 		players:     make([]*Player, t.GetPlayerCount()),
 		increasedID: 1,
-		requestIDs:  make([]int, t.GetPlayerCount()),
+		requestIDs:  make([]int32, t.GetPlayerCount()),
 	}
-
+	g.rule.LoadRule(t.GetGameRule(), Service.GetDefaultRules())
 	for i := int32(0); i < t.GetPlayerCount(); i++ {
 		g.players[i] = NewPlayer(g, t.GetGamePlayer(i))
 	}
@@ -43,24 +43,22 @@ func NewGame(subGame IGame, t *game.Table) *Game {
 }
 
 func (g *Game) OnGameBegin() {
-	g.Play.Initialize()
 	g.IGame.OnStart()
 	g.enterNextState()
 }
 
-func (g *Game) OnPlayerMsg(player *game.Player, req *cproto.TableMsgReq) {
-	if req == nil {
-		return
-	}
+func (g *Game) OnPlayerMsg(player *game.Player, data []byte) {
 	seat := player.Seat
 	if !g.IsValidSeat(seat) {
 		return
 	}
 
-	if len(req.Msg) == 0 {
-		return
-	}
-	g.IGame.OnReqMsg(seat, req)
+	g.IGame.OnReqMsg(seat, data)
+	g.enterNextState()
+}
+
+func (g *Game) OnGameTimer() {
+	g.timer.OnTick()
 	g.enterNextState()
 }
 
@@ -68,8 +66,16 @@ func (g *Game) GetTimer() *Timer {
 	return g.timer
 }
 
+func (g *Game) GetRule() *Rule {
+	return g.rule
+}
+
+func (g *Game) GetPlay() IPlay {
+	return g.Play
+}
+
 func (g *Game) GetPlayer(seat int32) *Player {
-	if seat >= 0 && int(seat) < len(g.players) {
+	if g.IsValidSeat(seat) {
 		return g.players[seat]
 	}
 	return nil
@@ -86,4 +92,23 @@ func (g *Game) enterNextState() {
 		g.timer.Cancel()
 		g.CurState.OnEnter()
 	}
+}
+
+func (g *Game) GetRequestID(seat int32) int32 {
+	g.increasedID++
+	if g.IsValidSeat(seat) {
+		g.requestIDs[seat] = g.increasedID
+	} else {
+		for i := range g.requestIDs {
+			g.requestIDs[i] = g.increasedID
+		}
+	}
+	return g.increasedID
+}
+
+func (g *Game) IsRequestID(seat, id int32) bool {
+	if !g.IsValidSeat(seat) {
+		return false
+	}
+	return g.requestIDs[seat] == id
 }

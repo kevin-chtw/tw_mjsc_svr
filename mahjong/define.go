@@ -1,7 +1,5 @@
 package mahjong
 
-type ITileID int
-
 // 分数类型
 type ScoreType int
 
@@ -21,15 +19,14 @@ const (
 
 // 听牌基础类
 type TingBase struct {
-	Tiles    []ITileID
+	Tiles    []int32
 	MinValue int
 }
 
 const (
-	TileNull ITileID = 0
-	TileBack ITileID = -1
-	SeatNull int32   = -1
-	SeatAll  int32   = -2
+	TileNull int32 = 0
+	TileBack int32 = -1
+	SeatNull int32 = -1
 )
 
 const (
@@ -64,18 +61,18 @@ var SameTileCountByColor = [ColorEnd]int{4, 4, 4, 4, 4, 1, 1, 0}
 var SEQ_BEGIN_BY_COLOR = [ColorEnd]int{0, 9, 18, 27, 31, 34, 38, 42}
 
 var (
-	TileHun    ITileID = ITileID((int(ColorHun) << 8) | (0 << 4))
-	TileInf    ITileID = ITileID((int(ColorEnd) << 8) | (0 << 4)) // 无效牌
-	TileZhong  ITileID = ITileID((int(ColorDragon) << 8) | (0 << 4))
-	TileFa     ITileID = ITileID((int(ColorDragon) << 8) | (1 << 4))
-	TileBai    ITileID = ITileID((int(ColorDragon) << 8) | (2 << 4))
-	TileDong   ITileID = ITileID((int(ColorWind) << 8) | (0 << 4))
-	TileNan    ITileID = ITileID((int(ColorWind) << 8) | (1 << 4))
-	TileXi     ITileID = ITileID((int(ColorWind) << 8) | (2 << 4))
-	TileBei    ITileID = ITileID((int(ColorWind) << 8) | (3 << 4))
-	TileYaoJi  ITileID = ITileID((int(ColorBamboo) << 8) | (0 << 4))
-	TileFlower ITileID = ITileID((int(ColorFlower) << 8) | (0 << 4))
-	TileSpring ITileID = ITileID((int(ColorSeason) << 8) | (0 << 4))
+	TileHun    int32 = int32((int(ColorHun) << 8) | (0 << 4))
+	TileInf    int32 = int32((int(ColorEnd) << 8) | (0 << 4)) // 无效牌
+	TileZhong  int32 = int32((int(ColorDragon) << 8) | (0 << 4))
+	TileFa     int32 = int32((int(ColorDragon) << 8) | (1 << 4))
+	TileBai    int32 = int32((int(ColorDragon) << 8) | (2 << 4))
+	TileDong   int32 = int32((int(ColorWind) << 8) | (0 << 4))
+	TileNan    int32 = int32((int(ColorWind) << 8) | (1 << 4))
+	TileXi     int32 = int32((int(ColorWind) << 8) | (2 << 4))
+	TileBei    int32 = int32((int(ColorWind) << 8) | (3 << 4))
+	TileYaoJi  int32 = int32((int(ColorBamboo) << 8) | (0 << 4))
+	TileFlower int32 = int32((int(ColorFlower) << 8) | (0 << 4))
+	TileSpring int32 = int32((int(ColorSeason) << 8) | (0 << 4))
 )
 
 type EScoreType int
@@ -153,15 +150,15 @@ const (
 )
 
 type HuPlayData struct {
-	TilesInHand       []ITileID
-	TilesForChowLeft  []ITileID
-	TilesForPon       []ITileID
-	TilesForKon       []ITileID
-	PaoTile           ITileID
+	TilesInHand       []int32
+	TilesForChowLeft  []int32
+	TilesForPon       []int32
+	TilesForKon       []int32
+	PaoTile           int32
 	CountConcealedKon int
 	IsCall            bool
 	CanCall           bool
-	TilesLai          []ITileID
+	TilesLai          []int32
 	RemoveHuType      map[int]struct{}
 	ExtraHuTypes      []int
 	ExtraInfo         int
@@ -193,23 +190,23 @@ func GetNextSeat(seat int32, step int, seatCount int) int32 {
 	return int32((int(seat) + (seatCount - step%seatCount)) % seatCount)
 }
 
-func MakeTile(color EColor, point int, flag int) ITileID {
-	return ITileID((int(color) << 8) | (point << 4) | flag)
+func MakeTile(color EColor, point int, flag int) int32 {
+	return int32((int(color) << 8) | (point << 4) | flag)
 }
 
-func TileColor(tile ITileID) EColor {
+func TileColor(tile int32) EColor {
 	return EColor((tile >> 8) & 0x0F)
 }
 
-func TilePoint(tile ITileID) int {
+func TilePoint(tile int32) int {
 	return int((tile >> 4) & 0x0F)
 }
 
-func TileFlag(tile ITileID) int {
+func TileFlag(tile int32) int {
 	return int(tile & 0x0F)
 }
 
-func IsValidTile(tile ITileID) bool {
+func IsValidTile(tile int32) bool {
 	return tile > 0 && tile < TileInf
 }
 
@@ -217,11 +214,11 @@ func IsSuitColor(color EColor) bool {
 	return color >= ColorCharacter && color <= ColorDot
 }
 
-func IsSuitTile(tile ITileID) bool {
+func IsSuitTile(tile int32) bool {
 	return IsValidTile(tile) && IsSuitColor(TileColor(tile))
 }
 
-func Is258Tile(tile ITileID) bool {
+func Is258Tile(tile int32) bool {
 	return IsValidTile(tile) && IsSuitColor(TileColor(tile)) && (TilePoint(tile)%3 == 1)
 }
 
@@ -229,18 +226,18 @@ func IsHonorColor(color EColor) bool {
 	return color == ColorWind || color == ColorDragon
 }
 
-func IsDragonTile(tile ITileID) bool {
+func IsDragonTile(tile int32) bool {
 	return TileColor(tile) == ColorDragon
 }
 
-func IsHonorTile(tile ITileID) bool {
+func IsHonorTile(tile int32) bool {
 	return IsValidTile(tile) && IsHonorColor(TileColor(tile))
 }
 
 // NewTingEx14 创建14张牌的听牌工具
 func NewTingEx14() *TingBase {
 	return &TingBase{
-		Tiles:    make([]ITileID, 0),
+		Tiles:    make([]int32, 0),
 		MinValue: 0,
 	}
 }
@@ -249,11 +246,11 @@ func IsExtraColor(color EColor) bool {
 	return color == ColorSeason || color == ColorFlower
 }
 
-func IsExtraTile(tile ITileID) bool {
+func IsExtraTile(tile int32) bool {
 	return IsValidTile(tile) && IsExtraColor(TileColor(tile))
 }
 
-func NextTileInSameColor(tile ITileID, step int) ITileID {
+func NextTileInSameColor(tile int32, step int) int32 {
 	if !IsValidTile(tile) {
 		return tile
 	}
@@ -276,7 +273,7 @@ func SwitchAISeat(seat int32) int32 {
 
 type Action struct {
 	Seat    int32
-	Tile    ITileID
+	Tile    int32
 	Operate int
 	Extra   int
 }

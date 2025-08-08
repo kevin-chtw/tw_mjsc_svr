@@ -27,8 +27,8 @@ type PlayData struct {
 	currentDrawTiles map[int]struct{}
 	call             bool
 	tianTing         bool
-	handTiles        []int
-	outTiles         []int
+	handTiles        []int32
+	outTiles         []int32
 	tianDiHuState    bool
 	passPon          map[int]struct{}
 	passHu           PassHuType
@@ -48,8 +48,8 @@ func NewPlayData(seat int) *PlayData {
 	return &PlayData{
 		callDataMap:      make(map[int]map[int]int),
 		currentDrawTiles: make(map[int]struct{}),
-		handTiles:        make([]int, 0),
-		outTiles:         make([]int, 0),
+		handTiles:        make([]int32, 0),
+		outTiles:         make([]int32, 0),
 		passPon:          make(map[int]struct{}),
 		passHu:           make(PassHuType),
 		chowGroups:       make([]ChowGroup, 0),
@@ -80,7 +80,7 @@ func (p *PlayData) SetCall(tile int, tianTing bool) {
 	p.tianTing = tianTing
 }
 
-func (p *PlayData) PutHandTile(tile int) {
+func (p *PlayData) PutHandTile(tile int32) {
 	p.handTiles = append(p.handTiles, tile)
 }
 
@@ -88,7 +88,7 @@ func (p *PlayData) RemoveHandTile(tile int, count int) {
 	// 实现移除多张手牌逻辑
 }
 
-func (p *PlayData) PutOutTile(tile int) {
+func (p *PlayData) PutOutTile(tile int32) {
 	p.outTiles = append(p.outTiles, tile)
 }
 
@@ -98,7 +98,7 @@ func (p *PlayData) RemoveOutTile() {
 	}
 }
 
-func (p *PlayData) HasTile(tile int) bool {
+func (p *PlayData) HasTile(tile int32) bool {
 	for _, t := range p.handTiles {
 		if t == tile {
 			return true
@@ -107,11 +107,11 @@ func (p *PlayData) HasTile(tile int) bool {
 	return false
 }
 
-func (p *PlayData) GetHandTiles() []int {
+func (p *PlayData) GetHandTiles() []int32 {
 	return p.handTiles
 }
 
-func (p *PlayData) GetOutTiles() []int {
+func (p *PlayData) GetOutTiles() []int32 {
 	return p.outTiles
 }
 

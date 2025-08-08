@@ -4,6 +4,10 @@ import (
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 )
 
+const (
+	SeatAll int32 = -2
+)
+
 var playerManager *PlayerManager
 var tableManager *TableManager
 

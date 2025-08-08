@@ -1,14 +1,14 @@
 package mahjong
 
-func TilesToMap(cards []ITileID) map[ITileID]int {
-	tileMap := make(map[ITileID]int)
+func TilesToMap(cards []int32) map[int32]int {
+	tileMap := make(map[int32]int)
 	for _, tile := range cards {
 		tileMap[tile]++
 	}
 	return tileMap
 }
 
-func CheckQiDui(cards []ITileID, countLaiZi int) (bool, int) {
+func CheckQiDui(cards []int32, countLaiZi int) (bool, int) {
 	tileMap := TilesToMap(cards)
 	luxury := 0
 	pairs := 0
@@ -26,7 +26,7 @@ func CheckQiDui(cards []ITileID, countLaiZi int) (bool, int) {
 	return totalPairs >= 7, luxury
 }
 
-func CheckAllPairs(cards []ITileID, countLaiZi int) (bool, int) {
+func CheckAllPairs(cards []int32, countLaiZi int) (bool, int) {
 	tileMap := TilesToMap(cards)
 	luxury := 0
 	pairs := 0
@@ -44,7 +44,7 @@ func CheckAllPairs(cards []ITileID, countLaiZi int) (bool, int) {
 	return (pairs*2 + countLaiZi) == len(cards), luxury
 }
 
-func CheckBasicHu(cards []ITileID, countLaiZi int) (bool, *bool, *bool) {
+func CheckBasicHu(cards []int32, countLaiZi int) (bool, *bool, *bool) {
 	tileMap := TilesToMap(cards)
 
 	// 检查碰碰胡
@@ -64,11 +64,11 @@ func CheckBasicHu(cards []ITileID, countLaiZi int) (bool, *bool, *bool) {
 	return anyHu, nil, nil
 }
 
-func _CheckAnyHu(cards map[ITileID]int, countLaiZi int) bool {
+func _CheckAnyHu(cards map[int32]int, countLaiZi int) bool {
 	// 实现类似C++的任意胡牌检查算法
 	// 首先尝试找将牌
 	for tile, count := range cards {
-		tempMap := make(map[ITileID]int)
+		tempMap := make(map[int32]int)
 		for k, v := range cards {
 			tempMap[k] = v
 		}
@@ -96,7 +96,7 @@ func _CheckAnyHu(cards map[ITileID]int, countLaiZi int) bool {
 	return false
 }
 
-func _CheckAllMeld(cards map[ITileID]int, countLaiZi int) bool {
+func _CheckAllMeld(cards map[int32]int, countLaiZi int) bool {
 	// 实现类似C++的_CheckAllMeld算法
 	// 检查所有牌是否能组成顺子或刻子
 	for tile, count := range cards {
@@ -129,12 +129,12 @@ func _CheckAllMeld(cards map[ITileID]int, countLaiZi int) bool {
 	return true
 }
 
-func CheckPonPonHu(cards []ITileID, countLaiZi int) bool {
+func CheckPonPonHu(cards []int32, countLaiZi int) bool {
 	tileMap := TilesToMap(cards)
 	return _CheckPonPonHu(tileMap, countLaiZi)
 }
 
-func _CheckPonPonHu(cards map[ITileID]int, countLaiZi int) bool {
+func _CheckPonPonHu(cards map[int32]int, countLaiZi int) bool {
 	// 实现完整的碰碰胡算法
 	hasJiang := false
 	needLaiZi := 0
@@ -164,14 +164,14 @@ func _CheckPonPonHu(cards map[ITileID]int, countLaiZi int) bool {
 	return needLaiZi <= countLaiZi
 }
 
-func CheckStraightHu(cards []ITileID, countLaiZi int) bool {
+func CheckStraightHu(cards []int32, countLaiZi int) bool {
 	tileMap := TilesToMap(cards)
 	return _CheckStraightHu(tileMap, countLaiZi)
 }
 
-func _CheckStraightHu(cards map[ITileID]int, countLaiZi int) bool {
+func _CheckStraightHu(cards map[int32]int, countLaiZi int) bool {
 	// 实现全顺子胡牌算法
-	tempMap := make(map[ITileID]int)
+	tempMap := make(map[int32]int)
 	for tile, count := range cards {
 		if !IsSuitTile(tile) {
 			return false
@@ -182,7 +182,7 @@ func _CheckStraightHu(cards map[ITileID]int, countLaiZi int) bool {
 	return _TestJiang(tempMap, countLaiZi, _CheckAllStraight)
 }
 
-func _CheckAllStraight(cards map[ITileID]int, countLaiZi int) bool {
+func _CheckAllStraight(cards map[int32]int, countLaiZi int) bool {
 	// 检查所有牌是否能组成顺子
 	for tile, count := range cards {
 		if count == 0 {
@@ -212,10 +212,10 @@ func _CheckAllStraight(cards map[ITileID]int, countLaiZi int) bool {
 	return true
 }
 
-func _TestJiang(cards map[ITileID]int, countLaiZi int, checker func(map[ITileID]int, int) bool) bool {
+func _TestJiang(cards map[int32]int, countLaiZi int, checker func(map[int32]int, int) bool) bool {
 	// 尝试各种可能的将牌组合
 	for tile, count := range cards {
-		tempMap := make(map[ITileID]int)
+		tempMap := make(map[int32]int)
 		for k, v := range cards {
 			tempMap[k] = v
 		}

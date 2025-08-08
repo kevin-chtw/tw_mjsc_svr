@@ -15,13 +15,13 @@ func TestCheckBasicHu(t *testing.T) {
 
 	testCases := []struct {
 		name  string
-		cards []mahjong.ITileID
+		cards []int32
 		laiZi int
 		want  bool
 	}{
 		{
 			name: "Normal Hu",
-			cards: []mahjong.ITileID{
+			cards: []int32{
 				mahjong.MakeTile(mahjong.ColorCharacter, 1, 0), mahjong.MakeTile(mahjong.ColorCharacter, 1, 0),
 				mahjong.MakeTile(mahjong.ColorCharacter, 2, 0), mahjong.MakeTile(mahjong.ColorCharacter, 2, 0),
 				mahjong.MakeTile(mahjong.ColorCharacter, 3, 0), mahjong.MakeTile(mahjong.ColorCharacter, 3, 0),

@@ -17,8 +17,8 @@ func NewStateInit(game mahjong.IGame, args ...any) mahjong.IState {
 }
 
 func (s *StateInit) OnEnter() {
-	s.State.GetMessager().SendGameStartAck()
-	s.State.GetMessager().SendPlaceAck()
+	s.GetPlay().Initialize()
+	s.State.GetMessager().sendGameStartAck()
 
 	s.AsyncTimer(time.Second, func() { s.GetGame().SetNextState(NewStateDeal) })
 }

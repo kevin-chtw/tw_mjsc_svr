@@ -3,7 +3,6 @@ package sc
 import (
 	"github.com/kevin-chtw/tw_game_svr/game"
 	"github.com/kevin-chtw/tw_game_svr/mahjong"
-	"github.com/kevin-chtw/tw_proto/cproto"
 	"github.com/kevin-chtw/tw_proto/scproto"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -28,9 +27,9 @@ func (g *Game) OnStart() {
 	g.Game.SetNextState(NewStateInit)
 }
 
-func (g *Game) OnReqMsg(seat int32, req *cproto.TableMsgReq) {
+func (g *Game) OnReqMsg(seat int32, data []byte) {
 	var msg scproto.SCReq
-	if err := protojson.Unmarshal(req.Msg, &msg); err != nil {
+	if err := protojson.Unmarshal(data, &msg); err != nil {
 		return
 	}
 

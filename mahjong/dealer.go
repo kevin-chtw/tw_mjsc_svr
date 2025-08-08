@@ -5,14 +5,14 @@ import "math/rand"
 // Dealer 麻将发牌器接口
 type Dealer struct {
 	game     *Game
-	tileWall []ITileID
+	tileWall []int32
 }
 
 // NewDealer 创建新的发牌器
 func NewDealer(game *Game) *Dealer {
 	return &Dealer{
 		game:     game,
-		tileWall: make([]ITileID, 0),
+		tileWall: make([]int32, 0),
 	}
 }
 
@@ -22,18 +22,18 @@ func (d *Dealer) GetGame() *Game {
 }
 
 func (d *Dealer) Initialize() {
-	tiles := Service.GetAllTiles(d.game.config)
+	tiles := Service.GetAllTiles(d.game.rule)
 	// 预计算总牌数并一次性分配
 	total := 0
 	for _, count := range tiles {
 		total += count
 	}
-	d.tileWall = make([]ITileID, total)
+	d.tileWall = make([]int32, total)
 
 	// 填充并同时随机化牌墙
 	i := 0
 	for tile, count := range tiles {
-		for j := 0; j < count; j++ {
+		for range count {
 			// 随机插入位置
 			pos := rand.Intn(i + 1)
 			if pos != i {
@@ -46,12 +46,22 @@ func (d *Dealer) Initialize() {
 }
 
 // DrawTile 抽牌
-func (d *Dealer) DrawTile(drawSeat int32, playerData *PlayData) ITileID {
-	// 抽牌逻辑
-	return TileNull
+func (d *Dealer) DrawTile() int32 {
+	if len(d.tileWall) == 0 {
+		return TileNull
+	}
+	tile := d.tileWall[0]
+	d.tileWall = d.tileWall[1:]
+	return tile
+}
+func (d *Dealer) Deal(count int) []int32 {
+	tiles := make([]int32, count)
+	copy(tiles, d.tileWall[:count])
+	d.tileWall = d.tileWall[count:]
+	return tiles
 }
 
 // GetRestTileCount 获取剩余牌数
-func (d *Dealer) GetRestCount() int {
-	return len(d.tileWall)
+func (d *Dealer) GetRestCount() int32 {
+	return int32(len(d.tileWall))
 }

@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/kevin-chtw/tw_game_svr/mahjong"
+	"github.com/kevin-chtw/tw_proto/scproto"
+	"google.golang.org/protobuf/proto"
 )
 
 type StateDeal struct {
@@ -19,9 +21,18 @@ func NewStateDeal(game mahjong.IGame, args ...any) mahjong.IState {
 }
 
 func (s *StateDeal) OnEnter() {
-	s.GetPlay().DoDeal()
+	s.GetPlay().Deal()
 
-	s.GetMessager().SendOpenDoorAck()
-	s.GetMessager().SendBeginAnimalAck()
-	s.AsyncTimer(time.Second*5, func() { s.game.Game.SetNextState(NewStateDiscard) })
+	s.GetMessager().sendOpenDoorAck()
+	s.GetMessager().sendAnimationAck()
+	s.AsyncMsgTimer(s.OnMsg, time.Second*5, func() { s.game.Game.SetNextState(NewStateDiscard) })
+}
+
+func (s *StateDeal) OnMsg(seat int32, msg proto.Message) {
+	req := msg.(*scproto.SCReq)
+
+	aniReq := req.GetScAnimationReq()
+	if aniReq != nil && seat == aniReq.Seat && s.game.IsRequestID(seat, aniReq.Requestid) {
+		s.game.Game.SetNextState(NewStateDiscard)
+	}
 }

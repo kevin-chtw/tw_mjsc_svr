@@ -30,17 +30,17 @@ func NewPlayData(seat int) *PlayData {
 	}
 }
 
-func (p *PlayData) CanSelfKon(cfg *mahjong.Config, ignoreTiles []int) bool {
+func (p *PlayData) CanSelfKon(cfg *mahjong.Rule, ignoreTiles []int) bool {
 	// 实现自杠检查逻辑
 	return false
 }
 
-func (p *PlayData) CanSelfCi(cfg *mahjong.Config, ciTile int) bool {
+func (p *PlayData) CanSelfCi(cfg *mahjong.Rule, ciTile int) bool {
 	// 实现自次检查逻辑
 	return false
 }
 
-func (p *PlayData) CanWaitCi(cfg *mahjong.Config, ciTile, outTile int) bool {
+func (p *PlayData) CanWaitCi(cfg *mahjong.Rule, ciTile, outTile int) bool {
 	// 实现等待次检查逻辑
 	return false
 }

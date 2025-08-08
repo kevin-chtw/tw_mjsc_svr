@@ -2,6 +2,8 @@ package mahjong
 
 import (
 	"time"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type StateOpts struct {
@@ -10,7 +12,7 @@ type StateOpts struct {
 
 type IState interface {
 	OnEnter()
-	OnPlayerMsg(seat int32, message interface{})
+	OnPlayerMsg(seat int32, req proto.Message)
 }
 
 func CreateState(newFn func(IGame, ...any) IState, g IGame, args ...any) IState {
@@ -20,7 +22,7 @@ func CreateState(newFn func(IGame, ...any) IState, g IGame, args ...any) IState 
 // State 麻将游戏状态基类
 type State struct {
 	game       *Game
-	msgHandler func(seat int32, req interface{})
+	msgHandler func(seat int32, req proto.Message)
 }
 
 // NewState 创建新的游戏状态
@@ -33,7 +35,7 @@ func NewState(game *Game) *State {
 
 // AsyncMsgTimer 设置异步消息定时器
 func (s *State) AsyncMsgTimer(
-	handler func(seat int32, req interface{}),
+	handler func(seat int32, req proto.Message),
 	timeout time.Duration,
 	onTimeout func(),
 ) {
@@ -48,8 +50,8 @@ func (s *State) AsyncTimer(timeout time.Duration, onTimeout func()) {
 }
 
 // HandlePlayerMsg 处理玩家消息
-func (s *State) OnPlayerMsg(seat int32, message interface{}) {
+func (s *State) OnPlayerMsg(seat int32, req proto.Message) {
 	if s.msgHandler != nil {
-		s.msgHandler(seat, message)
+		s.msgHandler(seat, req)
 	}
 }

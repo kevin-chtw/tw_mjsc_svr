@@ -1,8 +1,8 @@
 package sc
 
 import (
-	"github.com/golang/protobuf/proto"
 	"github.com/kevin-chtw/tw_game_svr/mahjong"
+	"google.golang.org/protobuf/proto"
 )
 
 type StateResult struct {

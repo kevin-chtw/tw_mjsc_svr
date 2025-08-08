@@ -10,13 +10,15 @@ func init() {
 }
 
 type service struct {
-	tiles     map[mahjong.ITileID]int
-	tilesFeng map[mahjong.ITileID]int
+	tiles     map[int32]int
+	tilesFeng map[int32]int
+	rules     []int
 }
 
 func NewService() mahjong.IService {
 	s := &service{
-		tiles: make(map[mahjong.ITileID]int),
+		tiles: make(map[int32]int),
+		rules: []int{10, 8},
 	}
 	s.init()
 	return s
@@ -32,8 +34,17 @@ func (s *service) init() {
 			s.tilesFeng[tile] = 4
 		}
 	}
+
 }
 
-func (s *service) GetAllTiles(conf *mahjong.Config) map[mahjong.ITileID]int {
+func (s *service) GetAllTiles(conf *mahjong.Rule) map[int32]int {
 	return s.tiles
+}
+
+func (s *service) GetHandCount() int {
+	return 13
+}
+
+func (s *service) GetDefaultRules() []int {
+	return s.rules
 }

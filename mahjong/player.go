@@ -2,14 +2,6 @@ package mahjong
 
 import "github.com/kevin-chtw/tw_game_svr/game"
 
-type EHuResultMode int
-
-const (
-	HuResultNone EHuResultMode = iota
-	HuResultPaoHu
-	HuResultZiMo
-)
-
 // 玩家状态常量
 const (
 	PlayerStatusNone     int = iota // 无状态
@@ -21,21 +13,20 @@ const (
 type Player struct {
 	player      *game.Player
 	game        *Game
-	status      int // PlayerStatus
-	huMode      EHuResultMode
 	tax         int64
 	score       int64 // 税前初始分
+	scoreChange int64 // 变动值(不含税)
 	isTrusted   bool
 	isOffline   bool
 	isOut       bool
-	scoreChange int64 // 变动值(不含税)
-
 }
 
 func NewPlayer(game *Game, player *game.Player) *Player {
 	return &Player{
-		game:        game,
 		player:      player,
+		game:        game,
+		tax:         0,
+		score:       int64(player.Score),
 		scoreChange: 0,
 	}
 }
@@ -44,22 +35,9 @@ func (p *Player) GetSeat() int32 {
 	return p.player.Seat
 }
 
-func (p *Player) GetScore() int64 {
-	return p.score
-}
-
-func (p *Player) GetUserID() string {
-	return p.player.ID
-}
-
 func (p *Player) AddScoreChange(value int64) int64 {
 	p.scoreChange += value
 	return p.scoreChange
-}
-
-func (p *Player) GetIncremental(value int64) int64 {
-	// 获取是否展示税后值
-	return value
 }
 
 func (p *Player) GetScoreChange() int64 {
@@ -70,7 +48,11 @@ func (p *Player) GetScoreChangeWithTax() int64 {
 	return p.scoreChange - p.tax
 }
 
-func (p *Player) GetCurrentScore() int64 {
+func (p *Player) GetInitScore() int64 {
+	return p.score
+}
+
+func (p *Player) GetCurScore() int64 {
 	return p.score + p.scoreChange - p.tax
 }
 
@@ -90,9 +72,7 @@ func (p *Player) IsOffline() bool {
 	return p.isOffline
 }
 
-func (p *Player) SetOut(status int, mode EHuResultMode) {
-	p.status = status
-	p.huMode = mode
+func (p *Player) SetOut() {
 	p.isOut = true
 }
 
@@ -122,10 +102,6 @@ func (p *Player) AddOperateEvent(chowCount, ponCount, konCount int, isCall bool)
 
 func (p *Player) AddHuEvent() {
 	// 添加胡牌事件统计
-}
-
-func (p *Player) GetStatus() int {
-	return p.status
 }
 
 func (p *Player) ResetScore(score int64) {

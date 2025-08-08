@@ -1,5 +1,11 @@
 package sc
 
+import (
+	"github.com/kevin-chtw/tw_game_svr/game"
+	"github.com/kevin-chtw/tw_game_svr/mahjong"
+	"github.com/kevin-chtw/tw_proto/scproto"
+)
+
 type WinAckData struct {
 	WinMode   int
 	PaoSeat   int
@@ -9,32 +15,55 @@ type WinAckData struct {
 
 type Messager struct {
 	game *Game
+	play *Play
 }
 
 func NewMessager(game *Game) *Messager {
 	return &Messager{
 		game: game,
+		play: game.GetPlay().(*Play),
 	}
 }
 
-func (m *Messager) SendDebugString(str string, seat int) {
-	// 实现发送调试信息
+func (m *Messager) sendGameStartAck() {
+	startAck := &scproto.SCGameStartAck{
+		Banker:    m.play.GetBanker(),
+		TileCount: m.play.GetDealer().GetRestCount(),
+		Scores:    m.play.GetCurScores(),
+	}
+	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScGameStartAck{ScGameStartAck: startAck}}
+	m.game.Send2Player(ack, game.SeatAll)
 }
 
-func (m *Messager) SendGameStartAck() {
-	// 实现发送游戏开始通知
+func (m *Messager) sendOpenDoorAck() {
+	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScOpenDoorAck{}}
+	count := m.game.GetPlayerCount()
+	for i := range count {
+		openDoor := &scproto.SCOpenDoorAck{
+			Seat:  i,
+			Tiles: m.play.GetPlayData(i).GetHandTiles(),
+		}
+		ack.Ack.(*scproto.SCAck_ScOpenDoorAck).ScOpenDoorAck = openDoor
+		m.game.Send2Player(openDoor, i)
+	}
 }
 
-func (m *Messager) SendPlaceAck() {
-	// 实现发送摆牌通知
+func (m *Messager) sendAnimationAck() {
+	animationAck := &scproto.SCAnimationAck{
+		Requestid: m.game.GetRequestID(game.SeatAll),
+	}
+	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScAnimationAck{ScAnimationAck: animationAck}}
+	m.game.Send2Player(ack, game.SeatAll)
 }
 
-func (m *Messager) SendOpenDoorAck() {
-	// 实现发送开门通知
-}
-
-func (m *Messager) SendOpenFanCiAck() {
-	// 实现发送翻次通知
+func (m *Messager) sendRequestAck(seat int32, operates *mahjong.Operates) {
+	requestAck := &scproto.SCRequestAck{
+		Seat:        seat,
+		RequestType: int32(operates.Value),
+		Requestid:   m.game.GetRequestID(seat),
+	}
+	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScRequestAck{ScRequestAck: requestAck}}
+	m.game.Send2Player(ack, seat)
 }
 
 func (m *Messager) SendGenZhuangAck() {
@@ -67,10 +96,6 @@ func (m *Messager) SendHandTiles() {
 
 func (m *Messager) SendMahjongResult(isLiuJu bool, paoSeat, paoCiSeat int) {
 	// 实现发送麻将结果
-}
-
-func (m *Messager) SendBeginAnimalAck() {
-	// 实现发送开始动画通知
 }
 
 func (m *Messager) setUntrustOnGameEnd(seat int) {

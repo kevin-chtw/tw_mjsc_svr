@@ -201,7 +201,7 @@ func (hc *HuCore) buildQuickTable() {
 	}
 }
 
-func (hc *HuCore) CheckBasicHu(cards []ITileID, countLaiZi int) bool {
+func (hc *HuCore) CheckBasicHu(cards []int32, countLaiZi int) bool {
 	if !hc.initialized {
 		return false
 	}

@@ -15,16 +15,16 @@ const (
 
 // Player 表示游戏中的玩家
 type Player struct {
-	ID     string // 玩家唯一ID
+	id     string // 玩家唯一ID
 	Seat   int32  // 座位号
-	Score  int32  // 玩家积分
+	Score  int64  // 玩家积分
 	Status string // 玩家状态
 }
 
 // NewPlayer 创建新玩家实例
 func NewPlayer(id string) *Player {
 	return &Player{
-		ID:     id,
+		id:     id,
 		Status: PlayerStatusOffline,
 	}
 }
@@ -35,18 +35,13 @@ func (p *Player) SetSeat(seatNum int32) {
 }
 
 // AddScore 增加玩家积分
-func (p *Player) AddScore(delta int32) {
+func (p *Player) AddScore(delta int64) {
 	p.Score += delta
 }
 
 // SetStatus 设置玩家状态
 func (p *Player) SetStatus(status string) {
 	p.Status = status
-}
-
-// GetInfo 获取玩家信息
-func (p *Player) GetInfo() (string, int32, int32, string) {
-	return p.ID, p.Seat, p.Score, p.Status
 }
 
 // HandleMessage 处理玩家消息

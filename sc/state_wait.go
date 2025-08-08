@@ -3,7 +3,7 @@ package sc
 import (
 	"github.com/kevin-chtw/tw_game_svr/mahjong"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 type StateWait struct {
@@ -58,7 +58,7 @@ func (s *StateWait) ToDiscardState(seat int) {
 	// 转换到弃牌状态
 }
 
-func (s *StateWait) isValidOperate(seat int, operate int) bool {
+func (s *StateWait) isValidOperate(seat int, operate int32) bool {
 	// 检查操作是否有效
 	if seat < 0 || seat >= len(s.operatesForSeats) {
 		return false
@@ -66,7 +66,7 @@ func (s *StateWait) isValidOperate(seat int, operate int) bool {
 	if s.operatesForSeats[seat] == nil {
 		return false
 	}
-	return s.operatesForSeats[seat].HasOperate(int(operate))
+	return s.operatesForSeats[seat].HasOperate(operate)
 }
 
 func (s *StateWait) getMaxOperate(seat int) int {

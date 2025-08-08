@@ -6,14 +6,14 @@ import (
 
 // TileExpression 麻将牌表达式基类
 type TileExpression struct {
-	s2i map[string]ITileID
-	i2s map[ITileID]string
+	s2i map[string]int32
+	i2s map[int32]string
 }
 
 func NewTileExpression() *TileExpression {
 	return &TileExpression{
-		s2i: make(map[string]ITileID),
-		i2s: make(map[ITileID]string),
+		s2i: make(map[string]int32),
+		i2s: make(map[int32]string),
 	}
 }
 
@@ -21,23 +21,23 @@ func (t *TileExpression) AddPrefix(prefix string, flag int) {
 	// 添加前缀映射
 }
 
-func (t *TileExpression) IdToName(card ITileID) string {
+func (t *TileExpression) IdToName(card int32) string {
 	if name, ok := t.i2s[card]; ok {
 		return name
 	}
 	return ""
 }
 
-func (t *TileExpression) NameToId(name string) ITileID {
+func (t *TileExpression) NameToId(name string) int32 {
 	if id, ok := t.s2i[name]; ok {
 		return id
 	}
 	return TileNull
 }
 
-func (t *TileExpression) CommaNamesToIds(commaString string) []ITileID {
+func (t *TileExpression) CommaNamesToIds(commaString string) []int32 {
 	names := strings.Split(commaString, ",")
-	ids := make([]ITileID, 0, len(names))
+	ids := make([]int32, 0, len(names))
 	for _, name := range names {
 		if id := t.NameToId(name); id != TileNull {
 			ids = append(ids, id)
@@ -46,7 +46,7 @@ func (t *TileExpression) CommaNamesToIds(commaString string) []ITileID {
 	return ids
 }
 
-func (t *TileExpression) IdsToCommaNames(tiles []ITileID) string {
+func (t *TileExpression) IdsToCommaNames(tiles []int32) string {
 	names := make([]string, 0, len(tiles))
 	for _, tile := range tiles {
 		if name := t.IdToName(tile); name != "" {
@@ -56,7 +56,7 @@ func (t *TileExpression) IdsToCommaNames(tiles []ITileID) string {
 	return strings.Join(names, ",")
 }
 
-func (t *TileExpression) addPair(key string, tile ITileID) {
+func (t *TileExpression) addPair(key string, tile int32) {
 	t.s2i[key] = tile
 	t.i2s[tile] = key
 }
@@ -75,11 +75,11 @@ func NewTileAINameCvt() *TileAINameCvt {
 	return cvt
 }
 
-func (t *TileAINameCvt) IdsToNames(tiles []ITileID) string {
+func (t *TileAINameCvt) IdsToNames(tiles []int32) string {
 	return t.IdsToCommaNames(tiles)
 }
 
-func (t *TileAINameCvt) NamesToIds(str string) []ITileID {
+func (t *TileAINameCvt) NamesToIds(str string) []int32 {
 	return t.CommaNamesToIds(str)
 }
 
@@ -97,8 +97,8 @@ func NewTileNameCvt() *TileNameCvt {
 	return cvt
 }
 
-func (t *TileNameCvt) TilesFromNames(names []string) []ITileID {
-	ids := make([]ITileID, 0, len(names))
+func (t *TileNameCvt) TilesFromNames(names []string) []int32 {
+	ids := make([]int32, 0, len(names))
 	for _, name := range names {
 		if id := t.NameToId(name); id != TileNull {
 			ids = append(ids, id)
@@ -109,7 +109,6 @@ func (t *TileNameCvt) TilesFromNames(names []string) []ITileID {
 
 // TileAssociation 麻将牌关联关系
 type TileAssociation struct {
-	vvCards [][]int
 }
 
 func NewTileAssociation() *TileAssociation {
@@ -118,14 +117,14 @@ func NewTileAssociation() *TileAssociation {
 	}
 }
 
-func (t *TileAssociation) IsAssociationCards(tile, drawTile ITileID) bool {
+func (t *TileAssociation) IsAssociationCards(tile, drawTile int32) bool {
 	// 判断两张牌是否关联
 	return false
 }
 
-func (t *TileAssociation) GetTileAssociationCards(drawTile ITileID) map[ITileID]struct{} {
+func (t *TileAssociation) GetTileAssociationCards(drawTile int32) map[int32]struct{} {
 	// 获取关联牌集合
-	return make(map[ITileID]struct{})
+	return make(map[int32]struct{})
 }
 
 // 全局转换器实例
@@ -147,11 +146,11 @@ func GetTileAssociation() *TileAssociation {
 	return tileAssociation
 }
 
-func GetTileName(tile ITileID) string {
+func GetTileName(tile int32) string {
 	return tileNameCvt.IdToName(tile)
 }
 
-func GetTileID(name string) ITileID {
+func GetTileID(name string) int32 {
 	return tileNameCvt.NameToId(name)
 }
 
