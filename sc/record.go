@@ -1,4 +1,4 @@
-package lygc
+package sc
 
 import (
 	"github.com/golang/protobuf/proto"

@@ -12,7 +12,7 @@ import (
 
 type IGame interface {
 	// OnGameBegin 游戏开始
-	OnGameBegin(Table *Table)
+	OnGameBegin()
 	// OnPlayerMsg 处理玩家消息
 	OnPlayerMsg(player *Player, req *cproto.TableMsgReq)
 }
@@ -28,33 +28,32 @@ const (
 
 // Table 表示一个游戏桌实例
 type Table struct {
-	GameID        int32              // 游戏ID
-	MatchID       int32              // 比赛ID
-	TableID       int32              // 桌号
-	MatchServerId string             // 匹配服务ID
-	Players       map[string]*Player // 玩家ID -> Player
-	Status        string             // "preparing", "playing", "finished"
+	gameID        int32              // 游戏ID
+	matchID       int32              // 比赛ID
+	tableID       int32              // 桌号
+	matchServerId string             // 匹配服务ID
+	players       map[string]*Player // 玩家ID -> Player
+	status        string             // "preparing", "playing", "finished"
 	app           pitaya.Pitaya
-	MatchType     int32  // 0: 普通匹配, 1: 房卡模式
-	ScoreBase     int32  // 分数基数
-	GameCount     int32  // 游戏局数
-	PlayerCount   int32  // 玩家数量
-	GameConfig    string // 游戏配置
+	matchType     int32  // 0: 普通匹配, 1: 房卡模式
+	scoreBase     int32  // 分数基数
+	gameCount     int32  // 游戏局数
+	playerCount   int32  // 玩家数量
+	gameConfig    string // 游戏配置
 	game          IGame  // 游戏逻辑处理接口
+	lastHandData  any
 }
 
 // NewTable 创建新的游戏桌实例
 func NewTable(gameId, matchID, tableID int32, app pitaya.Pitaya) *Table {
 	return &Table{
-		GameID:        gameId,
-		MatchID:       matchID,
-		TableID:       tableID,
-		MatchServerId: "",
-		Players:       make(map[string]*Player),
-		PlayerCount:   0,
-		Status:        TableStatusPreparing,
+		gameID:        gameId,
+		matchID:       matchID,
+		tableID:       tableID,
+		matchServerId: "",
+		players:       make(map[string]*Player),
+		status:        TableStatusPreparing,
 		app:           app,
-		game:          CreateGame(gameId),
 	}
 }
 
@@ -75,15 +74,16 @@ func (t *Table) handleEnterGame(player *Player, _ *cproto.EnterGameReq) {
 	}
 
 	// 添加玩家到桌中
-	t.Players[player.ID] = player
+	t.players[player.ID] = player
 	t.broadcastTablePlayer(player)
 	t.SendTablePlayer(player)
 	player.SetStatus(PlayerStatusReady)
 
 	// 检查是否满足开赛条件
 	if t.isAllPlayersReady() {
-		t.Status = TableStatusPlaying
-		t.game.OnGameBegin(t)
+		t.status = TableStatusPlaying
+		t.game = CreateGame(t.gameID, t)
+		t.game.OnGameBegin()
 	}
 }
 
@@ -92,21 +92,21 @@ func (t *Table) broadcastTablePlayer(player *Player) {
 	msg.Ack = &cproto.GameAck_TablePlayerAck{
 		TablePlayerAck: &cproto.TablePlayerAck{
 			Playerid: player.ID,
-			Seatnum:  player.SeatNum,
+			Seatnum:  player.Seat,
 		},
 	}
 	t.Broadcast(msg)
-	logrus.Infof("Player %s added to table %s", player.ID, t.TableID)
+	logrus.Infof("Player %s added to table %s", player.ID, t.tableID)
 }
 
 func (t *Table) SendTablePlayer(player *Player) {
 	msg := t.NewMsg()
-	for _, p := range t.Players {
+	for _, p := range t.players {
 		if p.ID != player.ID {
 			msg.Ack = &cproto.GameAck_TablePlayerAck{
 				TablePlayerAck: &cproto.TablePlayerAck{
 					Playerid: p.ID,
-					Seatnum:  p.SeatNum,
+					Seatnum:  p.Seat,
 				},
 			}
 			t.SendMsg(msg, player.ID)
@@ -117,21 +117,21 @@ func (t *Table) SendTablePlayer(player *Player) {
 func (t *Table) NewMsg() *cproto.GameAck {
 	return &cproto.GameAck{
 		Serverid: t.app.GetServerID(),
-		Gameid:   t.GameID,
-		Tableid:  t.TableID,
-		Matchid:  t.MatchID,
+		Gameid:   t.gameID,
+		Tableid:  t.tableID,
+		Matchid:  t.matchID,
 	}
 }
 
 func (t *Table) isOnTable(playerID string) bool {
-	if _, ok := t.Players[playerID]; ok {
+	if _, ok := t.players[playerID]; ok {
 		return true
 	}
 	return false
 }
 
 func (t *Table) isAllPlayersReady() bool {
-	for _, player := range t.Players {
+	for _, player := range t.players {
 		if player.Status != PlayerStatusReady {
 			return false
 		}
@@ -145,12 +145,12 @@ func (t *Table) HandleAddTable(ctx context.Context, req *sproto.AddTableReq) *sp
 		ErrorCode: int32(0), // 成功
 	}
 
-	t.Status = TableStatusPreparing
-	t.MatchType = req.GetMatchType()
-	t.ScoreBase = req.GetScoreBase()
-	t.GameCount = req.GetGameCount()
-	t.PlayerCount = req.GetPlayerCount()
-	t.GameConfig = req.GetGameConfig()
+	t.status = TableStatusPreparing
+	t.matchType = req.GetMatchType()
+	t.scoreBase = req.GetScoreBase()
+	t.gameCount = req.GetGameCount()
+	t.playerCount = req.GetPlayerCount()
+	t.gameConfig = req.GetGameConfig()
 	return ack
 }
 
@@ -166,7 +166,7 @@ func (t *Table) HandleAddPlayer(ctx context.Context, req *sproto.AddPlayerReq) *
 	player := playerManager.GetPlayer(req.Playerid)
 	player.SetSeat(req.Seatnum)
 	player.AddScore(req.Score)
-	t.Players[req.Playerid] = player
+	t.players[req.Playerid] = player
 
 	return ack
 }
@@ -175,19 +175,18 @@ func (t *Table) HandleCancelTable(ctx context.Context, req *sproto.CancelTableRe
 	ack = &sproto.CancelTableAck{
 		ErrorCode: int32(0), // 成功
 	}
-	if t.Status == TableStatusPlaying {
+	if t.status == TableStatusPlaying {
 		ack.ErrorCode = int32(1)
 		return
 	}
 	// 清理玩家状态
-	for _, player := range t.Players {
+	for _, player := range t.players {
 		player.SetStatus(PlayerStatusOffline)
 	}
-	t.Players = make(map[string]*Player) // 清空玩家列表
-	for _, player := range t.Players {
+	for _, player := range t.players {
 		playerManager.Delete(player.ID) // 从玩家管理器中删除玩家
 	}
-	tableManager.Delete(t.MatchID, t.TableID) // 从桌子管理器中删除
+	tableManager.Delete(t.matchID, t.tableID) // 从桌子管理器中删除
 	return ack
 }
 
@@ -195,16 +194,16 @@ func (t *Table) SendToMatch() error {
 	rsp := &cproto.CommonResponse{Err: cproto.ErrCode_OK}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := t.app.RPCTo(ctx, t.MatchServerId, "match.game.message", rsp, &sproto.Match2GameAck{}); err != nil {
-		t.Status = "preparing" // 回滚状态
+	if err := t.app.RPCTo(ctx, t.matchServerId, "match.game.message", rsp, &sproto.Match2GameAck{}); err != nil {
+		t.status = "preparing" // 回滚状态
 		return err
 	}
 	return nil
 }
 
 func (t *Table) Broadcast(msg *cproto.GameAck) {
-	players := make([]string, 0, len(t.Players))
-	for _, player := range t.Players {
+	players := make([]string, 0, len(t.players))
+	for _, player := range t.players {
 		if player.Status != PlayerStatusOffline && player.Status != PlayerStatusUnEnter {
 			players = append(players, player.ID)
 		}
@@ -224,4 +223,29 @@ func (t *Table) SendMsg(msg *cproto.GameAck, playerID string) error {
 		logrus.Infof("send game message to player %s: %v", playerID, m)
 	}
 	return nil
+}
+
+func (t *Table) GetLastGameData() any {
+	return t.lastHandData
+}
+
+func (t *Table) SetLastGameData(data any) {
+	t.lastHandData = data
+}
+
+func (g *Table) IsValidSeat(seat int32) bool {
+	return seat >= 0 && seat < g.playerCount
+}
+
+func (t *Table) GetGamePlayer(seat int32) *Player {
+	for _, p := range t.players {
+		if p.Seat == seat {
+			return p
+		}
+	}
+	return nil
+}
+
+func (t *Table) GetPlayerCount() int32 {
+	return t.playerCount
 }

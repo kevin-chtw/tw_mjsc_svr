@@ -2,8 +2,6 @@ package mahjong
 
 import (
 	"time"
-
-	"github.com/kevin-chtw/tw_game_svr/game"
 )
 
 type StateOpts struct {
@@ -12,17 +10,17 @@ type StateOpts struct {
 
 type IState interface {
 	OnEnter()
-	OnPlayerMsg(player *game.Player, message interface{})
+	OnPlayerMsg(seat int32, message interface{})
 }
 
-func CreateState[T IState](newFn func(IGame, ...any) T, g IGame, args ...any) T {
+func CreateState(newFn func(IGame, ...any) IState, g IGame, args ...any) IState {
 	return newFn(g, args)
 }
 
 // State 麻将游戏状态基类
 type State struct {
 	game       *Game
-	msgHandler func(seat ISeatID, req interface{})
+	msgHandler func(seat int32, req interface{})
 }
 
 // NewState 创建新的游戏状态
@@ -35,7 +33,7 @@ func NewState(game *Game) *State {
 
 // AsyncMsgTimer 设置异步消息定时器
 func (s *State) AsyncMsgTimer(
-	handler func(seat ISeatID, req interface{}),
+	handler func(seat int32, req interface{}),
 	timeout time.Duration,
 	onTimeout func(),
 ) {
@@ -50,8 +48,8 @@ func (s *State) AsyncTimer(timeout time.Duration, onTimeout func()) {
 }
 
 // HandlePlayerMsg 处理玩家消息
-func (s *State) OnPlayerMsg(player *game.Player, message interface{}) {
+func (s *State) OnPlayerMsg(seat int32, message interface{}) {
 	if s.msgHandler != nil {
-		s.msgHandler(ISeatID(player.SeatNum), message)
+		s.msgHandler(seat, message)
 	}
 }

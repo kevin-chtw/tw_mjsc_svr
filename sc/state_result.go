@@ -1,4 +1,4 @@
-package lygc
+package sc
 
 import (
 	"github.com/golang/protobuf/proto"
@@ -8,8 +8,8 @@ import (
 type StateResult struct {
 	*State
 	huSeats   []int
-	paoSeat   mahjong.ISeatID
-	paoCiSeat mahjong.ISeatID
+	paoSeat   int32
+	paoCiSeat int32
 	qiangGang bool
 }
 

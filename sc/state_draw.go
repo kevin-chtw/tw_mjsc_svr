@@ -1,4 +1,4 @@
-package lygc
+package sc
 
 import "github.com/kevin-chtw/tw_game_svr/mahjong"
 

@@ -7,7 +7,7 @@ import (
 var playerManager *PlayerManager
 var tableManager *TableManager
 
-type NewGame func() IGame
+type NewGame func(*Table) IGame
 
 var reg = make(map[int32]NewGame)
 
@@ -15,9 +15,9 @@ func Register(id int32, f NewGame) {
 	reg[id] = f
 }
 
-func CreateGame(id int32) IGame {
+func CreateGame(id int32, t *Table) IGame {
 	if f, ok := reg[id]; ok {
-		return f()
+		return f(t)
 	}
 	return nil
 }

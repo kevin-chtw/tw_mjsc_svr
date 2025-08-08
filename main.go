@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/kevin-chtw/tw_game_svr/game"
-	"github.com/kevin-chtw/tw_game_svr/lygc"
+	"github.com/kevin-chtw/tw_game_svr/sc"
 	"github.com/kevin-chtw/tw_game_svr/service"
 	"github.com/sirupsen/logrus"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
@@ -26,9 +26,7 @@ func main() {
 	defer app.Shutdown()
 
 	logrus.Infof("Pitaya server of type %s started", serverType)
-	game.Register(1, func() game.IGame {
-		return lygc.NewGame()
-	})
+	game.Register(1, sc.NewGame)
 	game.InitGame(app)
 	initServices()
 	app.Start()

@@ -1,4 +1,4 @@
-package lygc
+package sc
 
 type WinAckData struct {
 	WinMode   int

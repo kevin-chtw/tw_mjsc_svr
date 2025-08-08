@@ -19,7 +19,7 @@ const (
 )
 
 type Player struct {
-	*game.Player
+	player      *game.Player
 	game        *Game
 	status      int // PlayerStatus
 	huMode      EHuResultMode
@@ -35,13 +35,13 @@ type Player struct {
 func NewPlayer(game *Game, player *game.Player) *Player {
 	return &Player{
 		game:        game,
-		Player:      player,
+		player:      player,
 		scoreChange: 0,
 	}
 }
 
-func (p *Player) GetSeat() ISeatID {
-	return ISeatID(p.Player.SeatNum)
+func (p *Player) GetSeat() int32 {
+	return p.player.Seat
 }
 
 func (p *Player) GetScore() int64 {
@@ -49,7 +49,7 @@ func (p *Player) GetScore() int64 {
 }
 
 func (p *Player) GetUserID() string {
-	return p.Player.ID
+	return p.player.ID
 }
 
 func (p *Player) AddScoreChange(value int64) int64 {
@@ -136,7 +136,7 @@ func (p *Player) ResetScore(score int64) {
 
 type GamePlayer struct {
 	growValues map[uint32]int64
-	callback   func(ISeatID, uint32, int)
+	callback   func(int32, uint32, int)
 }
 
 func NewGamePlayer() *GamePlayer {
@@ -161,7 +161,7 @@ func (p *GamePlayer) GetHonorValue() int64 {
 	return 0
 }
 
-func (p *GamePlayer) SetCallback(callback func(ISeatID, uint32, int)) {
+func (p *GamePlayer) SetCallback(callback func(int32, uint32, int)) {
 	p.callback = callback
 }
 

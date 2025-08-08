@@ -50,11 +50,10 @@ func (i *RecordItem) ToString() string {
 }
 
 type Record struct {
-	startTime    time.Time
-	currentItem  *RecordItem
-	msgID        int
-	hasPBRecord  bool
-	game         *Game
+	startTime   time.Time
+	currentItem *RecordItem
+	hasPBRecord bool
+	game        *Game
 }
 
 func NewRecord(game *Game) *Record {
@@ -75,19 +74,19 @@ func (r *Record) Finish() {
 	// 游戏结束时调用
 }
 
-func (r *Record) RecordAction(ack interface{}, seat ISeatID) {
+func (r *Record) RecordAction(ack interface{}, seat int32) {
 	// 记录动作
 }
 
-func (r *Record) AddPlayerNetBreak(seat ISeatID) {
+func (r *Record) AddPlayerNetBreak(seat int32) {
 	// 记录玩家断网
 }
 
-func (r *Record) AddPlayerNetResume(seat ISeatID) {
+func (r *Record) AddPlayerNetResume(seat int32) {
 	// 记录玩家恢复网络
 }
 
-func (r *Record) AddPlayerExitMatch(seat ISeatID) {
+func (r *Record) AddPlayerExitMatch(seat int32) {
 	// 记录玩家退出比赛
 }
 
@@ -108,11 +107,11 @@ func (r *Record) RecordPBBegin() {
 	r.hasPBRecord = true
 }
 
-func (r *Record) RecordPBAction(ack interface{}, seat ISeatID) {
+func (r *Record) RecordPBAction(ack interface{}, seat int32) {
 	// 记录PB动作
 }
 
-func (r *Record) RecordPBResult(winners []ISeatID) {
+func (r *Record) RecordPBResult(winners []int32) {
 	// 记录PB结果
 }
 

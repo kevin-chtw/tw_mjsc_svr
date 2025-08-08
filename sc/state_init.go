@@ -1,4 +1,4 @@
-package lygc
+package sc
 
 import (
 	"time"
@@ -17,8 +17,6 @@ func NewStateInit(game mahjong.IGame, args ...any) mahjong.IState {
 }
 
 func (s *StateInit) OnEnter() {
-	s.State.GetMessager().SendDebugString("hello", -1)
-	s.State.GetPlay().Initialize()
 	s.State.GetMessager().SendGameStartAck()
 	s.State.GetMessager().SendPlaceAck()
 

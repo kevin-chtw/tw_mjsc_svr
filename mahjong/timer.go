@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	TimerIntervalMS  = 250
+	TimerIntervalMS = 250
 	GameTimeoutMS   = 120 * 1000
 )
 
@@ -15,14 +15,11 @@ type Timer struct {
 	delay       time.Duration
 	callback    func()
 	isLongLive  bool
-	game        *Game
 }
 
 // NewTimer 创建新的定时器实例
-func NewTimer(game *Game) *Timer {
-	return &Timer{
-		game: game,
-	}
+func NewTimer() *Timer {
+	return &Timer{}
 }
 
 // Schedule 安排定时任务

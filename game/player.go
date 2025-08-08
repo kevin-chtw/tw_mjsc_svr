@@ -2,7 +2,6 @@ package game
 
 import (
 	"context"
-	"sync"
 
 	"github.com/kevin-chtw/tw_proto/cproto"
 )
@@ -16,11 +15,10 @@ const (
 
 // Player 表示游戏中的玩家
 type Player struct {
-	ID      string // 玩家唯一ID
-	SeatNum int32  // 座位号
-	Score   int32  // 玩家积分
-	Status  string // 玩家状态
-	mu      sync.RWMutex
+	ID     string // 玩家唯一ID
+	Seat   int32  // 座位号
+	Score  int32  // 玩家积分
+	Status string // 玩家状态
 }
 
 // NewPlayer 创建新玩家实例
@@ -33,30 +31,22 @@ func NewPlayer(id string) *Player {
 
 // SetSeat 设置玩家座位号
 func (p *Player) SetSeat(seatNum int32) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.SeatNum = seatNum
+	p.Seat = seatNum
 }
 
 // AddScore 增加玩家积分
 func (p *Player) AddScore(delta int32) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
 	p.Score += delta
 }
 
 // SetStatus 设置玩家状态
 func (p *Player) SetStatus(status string) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
 	p.Status = status
 }
 
 // GetInfo 获取玩家信息
 func (p *Player) GetInfo() (string, int32, int32, string) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	return p.ID, p.SeatNum, p.Score, p.Status
+	return p.ID, p.Seat, p.Score, p.Status
 }
 
 // HandleMessage 处理玩家消息

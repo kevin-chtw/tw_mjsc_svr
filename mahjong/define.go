@@ -1,7 +1,6 @@
 package mahjong
 
 type ITileID int
-type ISeatID int
 
 // 分数类型
 type ScoreType int
@@ -29,8 +28,8 @@ type TingBase struct {
 const (
 	TileNull ITileID = 0
 	TileBack ITileID = -1
-	SeatNull ISeatID = -1
-	SeatAll  ISeatID = -2
+	SeatNull int32   = -1
+	SeatAll  int32   = -2
 )
 
 const (
@@ -190,8 +189,8 @@ type HuResult struct {
 	TotalMultiple int64
 }
 
-func GetNextSeat(seat ISeatID, step int, seatCount int) ISeatID {
-	return ISeatID((int(seat) + (seatCount - step%seatCount)) % seatCount)
+func GetNextSeat(seat int32, step int, seatCount int) int32 {
+	return int32((int(seat) + (seatCount - step%seatCount)) % seatCount)
 }
 
 func MakeTile(color EColor, point int, flag int) ITileID {
@@ -254,13 +253,6 @@ func IsExtraTile(tile ITileID) bool {
 	return IsValidTile(tile) && IsExtraColor(TileColor(tile))
 }
 
-// Logger 日志接口
-type Logger interface {
-	Printf(format string, args ...interface{})
-	Println(args ...interface{})
-	Errorf(format string, args ...interface{})
-}
-
 func NextTileInSameColor(tile ITileID, step int) ITileID {
 	if !IsValidTile(tile) {
 		return tile
@@ -272,7 +264,7 @@ func NextTileInSameColor(tile ITileID, step int) ITileID {
 	return MakeTile(color, point, 0) // 默认flag为0
 }
 
-func SwitchAISeat(seat ISeatID) ISeatID {
+func SwitchAISeat(seat int32) int32 {
 	if seat%2 == 0 {
 		if seat == 0 {
 			return 2
@@ -280,4 +272,11 @@ func SwitchAISeat(seat ISeatID) ISeatID {
 		return 0
 	}
 	return seat
+}
+
+type Action struct {
+	Seat    int32
+	Tile    ITileID
+	Operate int
+	Extra   int
 }

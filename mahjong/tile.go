@@ -130,8 +130,8 @@ func (t *TileAssociation) GetTileAssociationCards(drawTile ITileID) map[ITileID]
 
 // 全局转换器实例
 var (
-	tileAINameCvt  = NewTileAINameCvt()
-	tileNameCvt    = NewTileNameCvt()
+	tileAINameCvt   = NewTileAINameCvt()
+	tileNameCvt     = NewTileNameCvt()
 	tileAssociation = NewTileAssociation()
 )
 

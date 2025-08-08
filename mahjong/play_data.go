@@ -1,6 +1,5 @@
 package mahjong
 
-
 type Group struct {
 	Tile  int
 	From  int
@@ -16,9 +15,9 @@ type KonGroup struct {
 }
 
 type ChowGroup struct {
-	ChowTile  int
-	From      int
-	LeftTile  int
+	ChowTile int
+	From     int
+	LeftTile int
 }
 
 type PassHuType map[int]int
@@ -88,7 +87,6 @@ func (p *PlayData) PutHandTile(tile int) {
 func (p *PlayData) RemoveHandTile(tile int, count int) {
 	// 实现移除多张手牌逻辑
 }
-
 
 func (p *PlayData) PutOutTile(tile int) {
 	p.outTiles = append(p.outTiles, tile)
@@ -335,10 +333,4 @@ func (p *PlayData) GetDrawConfig() int {
 
 func (p *PlayData) GetDrawRate() int {
 	return p.drawRate
-}
-
-func (p *PlayData) CheckType(tile ITileID) DrawTileType {
-	// 简单实现：根据牌类型返回默认值
-	// 实际应根据业务逻辑实现
-	return DrawTileType(0)
 }

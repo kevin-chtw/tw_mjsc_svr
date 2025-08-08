@@ -1,4 +1,4 @@
-package lygc
+package sc
 
 import (
 	"github.com/kevin-chtw/tw_game_svr/mahjong"
@@ -70,9 +70,4 @@ func (p *PlayData) GetCiType(ciTile int, seat *int) EHuType {
 		return data.Type
 	}
 	return HuTypeNone
-}
-
-func (p *PlayData) isUsefulTile(tile int) bool {
-	// 实现有用牌检查逻辑
-	return false
 }
