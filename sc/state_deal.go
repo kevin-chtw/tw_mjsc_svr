@@ -25,7 +25,7 @@ func (s *StateDeal) OnEnter() {
 
 	s.GetMessager().sendOpenDoorAck()
 	s.GetMessager().sendAnimationAck()
-	s.AsyncMsgTimer(s.OnMsg, time.Second*5, func() { s.game.Game.SetNextState(NewStateDiscard) })
+	s.AsyncMsgTimer(s.OnMsg, time.Second*5, func() { s.game.SetNextState(NewStateDiscard) })
 }
 
 func (s *StateDeal) OnMsg(seat int32, msg proto.Message) {
@@ -33,6 +33,6 @@ func (s *StateDeal) OnMsg(seat int32, msg proto.Message) {
 
 	aniReq := req.GetScAnimationReq()
 	if aniReq != nil && seat == aniReq.Seat && s.game.IsRequestID(seat, aniReq.Requestid) {
-		s.game.Game.SetNextState(NewStateDiscard)
+		s.game.SetNextState(NewStateDiscard)
 	}
 }

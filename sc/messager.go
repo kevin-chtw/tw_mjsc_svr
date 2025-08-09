@@ -66,24 +66,59 @@ func (m *Messager) sendRequestAck(seat int32, operates *mahjong.Operates) {
 	m.game.Send2Player(ack, seat)
 }
 
-func (m *Messager) SendGenZhuangAck() {
-	// 实现发送跟庄通知
+func (m *Messager) sendDiscardAck() {
+	discardAck := &scproto.SCDiscardAck{
+		Seat: m.play.GetCurSeat(),
+		Tile: m.play.GetCurTile(),
+	}
+	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScDiscardAck{ScDiscardAck: discardAck}}
+	m.game.Send2Player(ack, game.SeatAll)
+}
+
+func (m *Messager) sendKonAck(seat, tile int32, konType mahjong.KonType) {
+	konAck := &scproto.SCKonAck{
+		Seat:    seat,
+		From:    m.play.GetCurSeat(),
+		Tile:    tile,
+		KonType: int32(konType),
+	}
+	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScKonAck{ScKonAck: konAck}}
+	m.game.Send2Player(ack, game.SeatAll)
+}
+
+func (m *Messager) sendHuAck(huSeats []int32, paoSeat int32) {
+	huAck := &scproto.SCHuAck{
+		PaoSeat: paoSeat,
+		Tile:    m.play.GetCurTile(),
+		HuData:  make([]*scproto.SCHuData, len(huSeats)),
+	}
+	for i := range huSeats {
+		huAck.HuData[i] = &scproto.SCHuData{
+			Seat:    huSeats[i],
+			HuTypes: m.play.GetHuResult(huSeats[i]).HuTypes,
+		}
+	}
+	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScHuAck{ScHuAck: huAck}}
+	m.game.Send2Player(ack, game.SeatAll)
+}
+
+func (m *Messager) sendDrawAck(tile int32) {
+	drawAck := &scproto.SCDrawAck{
+		Seat: m.play.GetCurSeat(),
+		Tile: tile,
+	}
+	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScDrawAck{ScDrawAck: drawAck}}
+	m.game.Send2Player(ack, drawAck.Seat)
+	drawAck.Seat = mahjong.SeatNull
+	for i := range m.game.GetPlayerCount() {
+		if i != drawAck.Seat {
+			m.game.Send2Player(ack, i)
+		}
+	}
 }
 
 func (m *Messager) SendPonAck(seat int) {
 	// 实现发送碰牌通知
-}
-
-func (m *Messager) SendDiscardAck() {
-	// 实现发送弃牌通知
-}
-
-func (m *Messager) SendDrawAck(showTiles map[int]int) {
-	// 实现发送抽牌通知
-}
-
-func (m *Messager) SendWinAck(data WinAckData) {
-	// 实现发送赢牌通知
 }
 
 func (m *Messager) SendTips(tipType int, seat int) {
@@ -96,8 +131,4 @@ func (m *Messager) SendHandTiles() {
 
 func (m *Messager) SendMahjongResult(isLiuJu bool, paoSeat, paoCiSeat int) {
 	// 实现发送麻将结果
-}
-
-func (m *Messager) setUntrustOnGameEnd(seat int) {
-	// 实现游戏结束时取消托管
 }

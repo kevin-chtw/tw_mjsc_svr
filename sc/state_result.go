@@ -7,18 +7,16 @@ import (
 
 type StateResult struct {
 	*State
-	huSeats   []int
+	huSeats   []int32
 	paoSeat   int32
-	paoCiSeat int32
 	qiangGang bool
 }
 
 func NewStateResult(game mahjong.IGame) *StateResult {
 	return &StateResult{
-		State:     NewState(game),
-		huSeats:   make([]int, 0),
-		paoSeat:   mahjong.SeatNull,
-		paoCiSeat: mahjong.SeatNull,
+		State:   NewState(game),
+		huSeats: make([]int32, 0),
+		paoSeat: mahjong.SeatNull,
 	}
 }
 
@@ -43,29 +41,11 @@ func (s *StateResult) onPlayerHu(multiples []int64, paoSeat int, huType EHuType)
 	// 实现玩家胡牌处理逻辑
 }
 
-type StateResultLiuJu struct {
-	*StateResult
-}
-
-func NewStateResultLiuJu(game mahjong.IGame) *StateResultLiuJu {
-	return &StateResultLiuJu{
-		StateResult: NewStateResult(game),
-	}
-}
-
-func (s *StateResultLiuJu) OnEnter() {
-	s.onPlayerLiuJu()
-}
-
-func (s *StateResultLiuJu) onPlayerLiuJu() {
-	// 实现流局处理逻辑
-}
-
 type StateResultPaoHu struct {
 	*StateResult
 }
 
-func NewStateResultPaoHu(huSeats []int, isGrabKon bool) *StateResultPaoHu {
+func NewStateResultPaoHu(huSeats []int32, isGrabKon bool) *StateResultPaoHu {
 	return &StateResultPaoHu{
 		StateResult: &StateResult{
 			huSeats:   huSeats,
@@ -76,22 +56,4 @@ func NewStateResultPaoHu(huSeats []int, isGrabKon bool) *StateResultPaoHu {
 
 func (s *StateResultPaoHu) OnEnter() {
 	// 实现跑胡状态进入逻辑
-}
-
-type StateResultSelfHu struct {
-	*StateResult
-	dianCiSeat int
-	huType     EHuType
-}
-
-func NewStateResultSelfHu(game mahjong.IGame, huType EHuType, seat int) *StateResultSelfHu {
-	return &StateResultSelfHu{
-		StateResult: NewStateResult(game),
-		dianCiSeat:  seat,
-		huType:      huType,
-	}
-}
-
-func (s *StateResultSelfHu) OnEnter() {
-	// 实现自胡状态进入逻辑
 }

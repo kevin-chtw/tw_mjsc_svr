@@ -7,7 +7,18 @@ type Play struct {
 }
 
 func NewPlay(game *Game) *Play {
-	return &Play{
+	p := &Play{
 		Play: mahjong.NewPlay(game.Game),
 	}
+	p.ExtraHuTypes = p
+	p.PlayConf = &mahjong.PlayConf{}
+	return p
+}
+
+func (p *Play) SelfExtraFans() []int32 {
+	return []int32{}
+}
+
+func (p *Play) PaoExtraFans() []int32 {
+	return []int32{}
 }

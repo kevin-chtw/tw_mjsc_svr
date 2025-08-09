@@ -41,7 +41,7 @@ type Table struct {
 	status        string             // "preparing", "playing", "finished"
 	app           pitaya.Pitaya
 	matchType     int32  // 0: 普通匹配, 1: 房卡模式
-	scoreBase     int32  // 分数基数
+	scoreBase     int64  // 分数基数
 	gameCount     int32  // 游戏局数
 	playerCount   int32  // 玩家数量
 	gameRule      string // 游戏配置
@@ -181,7 +181,7 @@ func (t *Table) HandleAddTable(ctx context.Context, req *sproto.AddTableReq) *sp
 
 	t.status = TableStatusPreparing
 	t.matchType = req.GetMatchType()
-	t.scoreBase = req.GetScoreBase()
+	t.scoreBase = int64(req.GetScoreBase())
 	t.gameCount = req.GetGameCount()
 	t.playerCount = req.GetPlayerCount()
 	t.gameRule = req.GetGameConfig()
@@ -234,6 +234,11 @@ func (t *Table) HandleCancelTable(ctx context.Context, req *sproto.CancelTableRe
 	t.gameMutex.Unlock()
 
 	return ack
+}
+
+func (t *Table) NotifyGameOver() {
+	t.status = TableStatusFinished
+	t.Send2Match()
 }
 
 func (t *Table) Send2Match() error {
@@ -293,6 +298,10 @@ func (t *Table) GetPlayerCount() int32 {
 
 func (t *Table) GetGameRule() string {
 	return t.gameRule
+}
+
+func (t *Table) GetScoreBase() int64 {
+	return int64(t.scoreBase)
 }
 
 func (t *Table) onTick() {

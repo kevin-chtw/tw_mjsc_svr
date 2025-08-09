@@ -9,12 +9,14 @@ import (
 
 type Game struct {
 	*mahjong.Game
-	messager *Messager
+	messager   *Messager
+	scorelator *mahjong.Scorelator
 }
 
 func NewGame(t *game.Table) game.IGame {
 	g := &Game{}
 	g.messager = NewMessager(g)
+	g.scorelator = mahjong.NewScroelator(g.Game)
 	g.Game = mahjong.NewGame(g, t)
 	return g
 }
@@ -45,4 +47,8 @@ func (g *Game) OnReqMsg(seat int32, data []byte) {
 
 func (g *Game) GetMessager() *Messager {
 	return g.messager
+}
+
+func (g *Game) GetScorelator() *mahjong.Scorelator {
+	return g.scorelator
 }

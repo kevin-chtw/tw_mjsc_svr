@@ -44,11 +44,6 @@ func (i *RecordItem) AddProperty(name string, value interface{}) {
 	i.Properties[name] = ToString(value)
 }
 
-func (i *RecordItem) ToString() string {
-	// 实现转换为字符串的逻辑
-	return ""
-}
-
 type Record struct {
 	startTime   time.Time
 	currentItem *RecordItem

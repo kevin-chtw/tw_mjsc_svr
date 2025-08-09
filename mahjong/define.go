@@ -149,21 +149,6 @@ const (
 	GroupTypeBuKon
 )
 
-type HuPlayData struct {
-	TilesInHand       []int32
-	TilesForChowLeft  []int32
-	TilesForPon       []int32
-	TilesForKon       []int32
-	PaoTile           int32
-	CountConcealedKon int
-	IsCall            bool
-	CanCall           bool
-	TilesLai          []int32
-	RemoveHuType      map[int]struct{}
-	ExtraHuTypes      []int
-	ExtraInfo         int
-}
-
 type TileStyle struct {
 	ShunCount  int
 	NaiZiCount int
@@ -178,13 +163,6 @@ const (
 	MAX_NAI_NUM   = 4
 	BIT_VAL_FLAG  = 0x07
 )
-
-type HuResult struct {
-	HuTypes       []int
-	Extras        map[int]int
-	TotalFan      int
-	TotalMultiple int64
-}
 
 func GetNextSeat(seat int32, step int, seatCount int) int32 {
 	return int32((int(seat) + (seatCount - step%seatCount)) % seatCount)

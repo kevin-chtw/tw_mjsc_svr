@@ -3,60 +3,46 @@ package mahjong
 import (
 	"math/rand"
 	"sort"
-	"time"
 )
-
-// 初始化随机数种子
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
-// Random 生成[0, maxValue)范围内的随机数
-func Random(maxValue int) int {
-	if maxValue <= 0 {
-		return 0
-	}
-	return rand.Intn(maxValue)
-}
 
 // RandomByRates 根据权重随机选择索引
 func RandomByRates(rates []int) int {
-    sum := 0
-    for _, rate := range rates {
-        sum += rate
-    }
-    if sum <= 0 {
-        return 0
-    }
+	sum := 0
+	for _, rate := range rates {
+		sum += rate
+	}
+	if sum <= 0 {
+		return 0
+	}
 
-    value := Random(sum)
-    for i, rate := range rates {
-        if value < rate {
-            return i
-        }
-        value -= rate
-    }
-    return 0
+	value := rand.Intn(sum)
+	for i, rate := range rates {
+		if value < rate {
+			return i
+		}
+		value -= rate
+	}
+	return 0
 }
 
 // RandomByRatesFloat 根据浮点权重随机选择索引
 func RandomByRatesFloat(rates []float64) int {
-    sum := 0.0
-    for _, rate := range rates {
-        sum += rate
-    }
-    if sum <= 0 {
-        return 0
-    }
+	sum := 0.0
+	for _, rate := range rates {
+		sum += rate
+	}
+	if sum <= 0 {
+		return 0
+	}
 
-    value := rand.Float64() * sum
-    for i, rate := range rates {
-        if value < rate {
-            return i
-        }
-        value -= rate
-    }
-    return 0
+	value := rand.Float64() * sum
+	for i, rate := range rates {
+		if value < rate {
+			return i
+		}
+		value -= rate
+	}
+	return 0
 }
 
 // HexValue 十六进制字符转数值
@@ -162,35 +148,36 @@ func HasSameKeys[K comparable, V1, V2 any](m1 map[K]V1, m2 map[K]V2) bool {
 	}
 	return true
 }
+
 // HasSameElements 检查两个切片元素是否相同
 func HasSameElements[T comparable](v1, v2 []T, reorder bool) bool {
-    if len(v1) != len(v2) {
-        return false
-    }
+	if len(v1) != len(v2) {
+		return false
+	}
 
-    if reorder {
-        v1Copy := make([]T, len(v1))
-        v2Copy := make([]T, len(v2))
-        copy(v1Copy, v1)
-        copy(v2Copy, v2)
-        
-        // 使用字符串表示进行比较排序
-        sort.Slice(v1Copy, func(i, j int) bool {
-            return ToString(v1Copy[i]) < ToString(v1Copy[j])
-        })
-        sort.Slice(v2Copy, func(i, j int) bool {
-            return ToString(v2Copy[i]) < ToString(v2Copy[j])
-        })
-        
-        return HasSameElements(v1Copy, v2Copy, false)
-    }
+	if reorder {
+		v1Copy := make([]T, len(v1))
+		v2Copy := make([]T, len(v2))
+		copy(v1Copy, v1)
+		copy(v2Copy, v2)
 
-    for i := range v1 {
-        if v1[i] != v2[i] {
-            return false
-        }
-    }
-    return true
+		// 使用字符串表示进行比较排序
+		sort.Slice(v1Copy, func(i, j int) bool {
+			return ToString(v1Copy[i]) < ToString(v1Copy[j])
+		})
+		sort.Slice(v2Copy, func(i, j int) bool {
+			return ToString(v2Copy[i]) < ToString(v2Copy[j])
+		})
+
+		return HasSameElements(v1Copy, v2Copy, false)
+	}
+
+	for i := range v1 {
+		if v1[i] != v2[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // HasAnyElement 检查容器中是否包含目标集合中的任一元素

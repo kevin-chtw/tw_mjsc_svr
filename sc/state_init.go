@@ -20,5 +20,5 @@ func (s *StateInit) OnEnter() {
 	s.GetPlay().Initialize()
 	s.State.GetMessager().sendGameStartAck()
 
-	s.AsyncTimer(time.Second, func() { s.GetGame().SetNextState(NewStateDeal) })
+	s.AsyncTimer(time.Second, func() { s.game.SetNextState(NewStateDeal) })
 }
