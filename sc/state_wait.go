@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/kevin-chtw/tw_game_svr/mahjong"
+	"github.com/kevin-chtw/tw_proto/scproto"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -11,7 +12,7 @@ import (
 type StateWait struct {
 	*State
 	operatesForSeats   []*mahjong.Operates // 每个座位可执行的操作
-	reqOperateForSeats []int               // 每个座位已请求的操作
+	reqOperateForSeats map[int32]int       // 每个座位已请求的操作
 }
 
 func NewStateWait(game mahjong.IGame, args ...any) mahjong.IState {
@@ -19,7 +20,7 @@ func NewStateWait(game mahjong.IGame, args ...any) mahjong.IState {
 		State: NewState(game),
 	}
 	s.operatesForSeats = make([]*mahjong.Operates, s.game.GetPlayerCount())
-	s.reqOperateForSeats = make([]int, s.game.GetPlayerCount())
+	s.reqOperateForSeats = make(map[int32]int)
 	return s
 }
 
@@ -36,66 +37,152 @@ func (s *StateWait) OnEnter() {
 		if operates.Value != 0 && !trusted {
 			s.GetMessager().sendRequestAck(i, operates)
 		} else {
-			s.setRequestAction(i, s.getDefaultOperate(i))
+			s.setReqOperate(i, s.getDefaultOperate(i))
 		}
 	}
 
 	timeout := s.game.GetRule().GetValue(RuleWaitTime) + 1
-	s.AsyncMsgTimer(s.OnPlayerMsg, time.Second*time.Duration(timeout), s.Timeout)
+	s.AsyncMsgTimer(s.OnMsg, time.Second*time.Duration(timeout), s.Timeout)
 	s.tryHandleAction()
 }
 
-func (s *StateWait) OnPlayerMsg(seat int32, req proto.Message) {
-	// 实现处理等待请求逻辑
+func (s *StateWait) OnMsg(seat int32, msg proto.Message) {
+	req := msg.(*scproto.SCReq)
+	optReq := req.GetScRequestReq()
+	if optReq == nil || optReq.Seat != seat || !s.game.IsRequestID(seat, optReq.Requestid) {
+		return
+	}
+
+	if !s.isValidOperate(seat, int(optReq.RequestType)) {
+		return
+	}
+	s.setReqOperate(seat, int(optReq.RequestType))
 }
 
 func (s *StateWait) Timeout() {
-	// 实现超时处理逻辑
+	for i := int32(0); i < s.game.GetPlayerCount(); i++ {
+		if i == s.GetPlay().GetCurSeat() {
+			continue
+		}
+		if _, ok := s.reqOperateForSeats[i]; !ok {
+			s.setReqOperate(i, s.getDefaultOperate(i))
+		}
+	}
 	s.tryHandleAction()
 }
-func (s *StateWait) setRequestAction(seat int32, operate int) {
+
+func (s *StateWait) setReqOperate(seat int32, operate int) {
 	if s.game.IsValidSeat(seat) {
 		s.reqOperateForSeats[seat] = operate
 	}
 }
 
+func (s *StateWait) getReqOperate(seat int32) (int, bool) {
+	operate, ok := s.reqOperateForSeats[seat]
+	return operate, ok
+}
+
 func (s *StateWait) tryHandleAction() {
-	// 尝试处理所有玩家的操作
+	curSeat := s.GetPlay().GetCurSeat()
+	huSeats := make([]int32, 0)
+	for i := int32(1); i < s.game.GetPlayerCount(); i++ {
+		seat := mahjong.GetNextSeat(curSeat, i, s.game.GetPlayerCount())
+		if operate, ok := s.getReqOperate(seat); ok {
+			if operate == mahjong.OperateHu {
+				huSeats = append(huSeats, seat)
+			}
+		} else if s.getMaxOperate(seat) == mahjong.OperateHu {
+			return
+		}
+	}
+
+	if len(huSeats) > 0 {
+		s.excuteHu(huSeats)
+		return
+	}
+
+	maxOper := mahjong.OperatePass
+	maxOperSeat := mahjong.SeatNull
+	isMaxReq := true
+	for i := int32(1); i < s.game.GetPlayerCount(); i++ {
+		seat := mahjong.GetNextSeat(curSeat, i, s.game.GetPlayerCount())
+		if operate, ok := s.getReqOperate(seat); ok {
+			if operate > maxOper {
+				maxOper = operate
+				maxOperSeat = seat
+				isMaxReq = true
+			}
+		} else if operate := s.getMaxOperate(seat); operate > maxOper {
+			maxOper = operate
+			maxOperSeat = seat
+			isMaxReq = false
+		}
+	}
+	if isMaxReq {
+		s.excuteOperate(maxOperSeat, maxOper)
+	}
 }
 
-func (s *StateWait) ExcuteAction(seat int, operate int) {
-	// 执行指定座位的操作
+func (s *StateWait) excuteOperate(seat int32, operate int) {
+	if operate == mahjong.OperateKon {
+		s.GetPlay().ZhiKon(seat)
+		s.GetMessager().sendKonAck(seat, s.GetPlay().GetCurTile(), mahjong.KonTypeZhi)
+		s.toDrawState(seat)
+		return
+	}
+	if operate == mahjong.OperatePon {
+		s.GetPlay().Pon(seat)
+		s.GetMessager().sendPonAck(seat)
+		s.toDiscardState(seat)
+		return
+	}
+	s.toDrawState(mahjong.SeatNull)
 }
 
-func (s *StateWait) ExcuteActionHu(huSeats []int) {
-	// 执行胡牌操作
+func (s *StateWait) excuteHu(huSeats []int32) {
+	s.game.SetNextState(NewStatePaohu, huSeats)
 }
 
-func (s *StateWait) ToDrawState(seat int) {
-	// 转换到抽牌状态
+func (s *StateWait) toDrawState(seat int32) {
+	s.GetPlay().DoSwitchSeat(seat)
+	s.game.SetNextState(NewStateDraw)
 }
 
-func (s *StateWait) ToDiscardState(seat int) {
-	// 转换到弃牌状态
+func (s *StateWait) toDiscardState(seat int32) {
+	s.GetPlay().DoSwitchSeat(seat)
+	s.game.SetNextState(NewStateDiscard)
 }
 
-func (s *StateWait) isValidOperate(seat int, operate int32) bool {
+func (s *StateWait) isValidOperate(seat int32, operate int) bool {
 	// 检查操作是否有效
-	if seat < 0 || seat >= len(s.operatesForSeats) {
+	if !s.game.IsValidSeat(seat) {
 		return false
 	}
 	if s.operatesForSeats[seat] == nil {
 		return false
 	}
-	return s.operatesForSeats[seat].HasOperate(operate)
+	return s.operatesForSeats[seat].HasOperate(int32(operate))
 }
 
 func (s *StateWait) getMaxOperate(seat int32) int {
-	// 获取最高优先级的操作
-	return mahjong.OperateNone
+	if ops := s.operatesForSeats[seat]; ops != nil {
+		if ops.HasOperate(mahjong.OperateHu) {
+			return mahjong.OperateHu
+		}
+		if ops.HasOperate(mahjong.OperateKon) {
+			return mahjong.OperateKon
+		}
+		if ops.HasOperate(mahjong.OperatePon) {
+			return mahjong.OperatePon
+		}
+	}
+	return mahjong.OperatePass
 }
 
 func (s *StateWait) getDefaultOperate(seat int32) int {
-	// 获取默认操作
-	return mahjong.OperateNone
+	ops := s.operatesForSeats[seat]
+	if ops != nil && ops.HasOperate(mahjong.OperateHu) {
+		return mahjong.OperateHu
+	}
+	return mahjong.OperatePass
 }

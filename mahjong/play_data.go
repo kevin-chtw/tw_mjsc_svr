@@ -123,6 +123,10 @@ func (p *PlayData) canKon(tile int32, konType KonType) bool {
 	}
 }
 
+func (p *PlayData) canPon(tile int32) bool {
+	return CountElement(p.handTiles, tile) >= 2
+}
+
 func (p *PlayData) GetHandTiles() []int32 {
 	return p.handTiles
 }

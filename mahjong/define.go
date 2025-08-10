@@ -164,8 +164,8 @@ const (
 	BIT_VAL_FLAG  = 0x07
 )
 
-func GetNextSeat(seat int32, step int, seatCount int) int32 {
-	return int32((int(seat) + (seatCount - step%seatCount)) % seatCount)
+func GetNextSeat(seat, step, seatCount int32) int32 {
+	return (seat + step) % seatCount
 }
 
 func MakeTile(color EColor, point int, flag int) int32 {

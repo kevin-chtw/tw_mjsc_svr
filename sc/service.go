@@ -1,6 +1,10 @@
 package sc
 
-import "github.com/kevin-chtw/tw_game_svr/mahjong"
+import (
+	"maps"
+
+	"github.com/kevin-chtw/tw_game_svr/mahjong"
+)
 
 func init() {
 	mahjong.Service = NewService()
@@ -16,6 +20,7 @@ type service struct {
 func NewService() mahjong.IService {
 	s := &service{
 		tiles:        make(map[int32]int),
+		tilesFeng:    make(map[int32]int),
 		defaultRules: []int{10, 8},
 		huCore:       mahjong.NewHuCore(14),
 	}
@@ -62,7 +67,8 @@ func (s *service) CheckHu(data *mahjong.HuData, rule *mahjong.Rule) (*mahjong.Hu
 func (s *service) CheckCall(data *mahjong.HuData, rule *mahjong.Rule) map[int32]map[int32]int64 {
 	callData := make(map[int32]map[int32]int64)
 	count := len(data.TilesInHand) % 3
-	if count == 2 {
+	switch count {
+	case 2:
 		// 去重处理
 		checkTiles := make([]int32, 0)
 		tileSet := make(map[int32]bool)
@@ -86,18 +92,14 @@ func (s *service) CheckCall(data *mahjong.HuData, rule *mahjong.Rule) map[int32]
 			// 检查叫牌
 			fans := s.checkCallFan(&tempData, rule)
 			if len(fans) > 0 {
-				if callData[tile] == nil {
-					callData[tile] = make(map[int32]int64)
-				}
-				for k, v := range fans {
-					callData[tile][k] = v
-				}
+				callData[tile] = make(map[int32]int64)
+				maps.Copy(callData[tile], fans)
 			}
 
 			// 恢复牌
 			tempData.TilesInHand = append(tempData.TilesInHand, tile)
 		}
-	} else if count == 1 {
+	case 1:
 		// 直接检查叫牌
 		fans := s.checkCallFan(data, rule)
 		if len(fans) > 0 {

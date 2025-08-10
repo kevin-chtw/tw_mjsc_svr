@@ -122,6 +122,17 @@ func (p *Play) Discard(tile int32) {
 	p.addHistory(p.curSeat, p.curTile, OperateDiscard, 0)
 }
 
+func (p *Play) ZhiKon(seat int32) {
+	playData := p.playData[seat]
+	if !playData.canKon(p.curTile, KonTypeZhi) {
+		logrus.Error("player cannot zhi kon")
+		return
+	}
+	playData.kon(p.curTile, p.curSeat, KonTypeZhi)
+	p.playData[p.curSeat].RemoveOutTile()
+	p.addHistory(seat, p.curTile, OperateKon, 0)
+}
+
 func (p *Play) TryKon(tile int32, konType KonType) bool {
 	playData := p.playData[p.curSeat]
 	if !playData.canKon(tile, konType) {
@@ -133,10 +144,18 @@ func (p *Play) TryKon(tile int32, konType KonType) bool {
 	return true
 }
 
-func (p *Play) SelfHu() (multiples []int64) {
-	p.huSeats = append(p.huSeats, p.curSeat)
-	p.addHistory(p.curSeat, p.curTile, OperateHu, 0)
+func (p *Play) Pon(seat int32) {
+	playData := p.playData[seat]
+	if !playData.canPon(p.curTile) {
+		logrus.Error("player cannot pon")
+		return
+	}
+	playData.Pon(p.curTile, p.curSeat)
+	p.playData[p.curSeat].RemoveOutTile()
+	p.addHistory(seat, p.curTile, OperatePon, 0)
+}
 
+func (p *Play) Zimo() (multiples []int64) {
 	multiples = make([]int64, p.game.GetPlayerCount())
 	huResult := p.huResult[p.curSeat]
 	multi := p.PlayConf.GetRealMultiple(huResult.TotalMuti)
@@ -144,10 +163,12 @@ func (p *Play) SelfHu() (multiples []int64) {
 		if p.game.GetPlayer(i).IsOut() || i == p.curSeat {
 			continue
 		}
-
 		multiples[i] = -multi
 		multiples[p.curSeat] += multi
 	}
+
+	p.huSeats = append(p.huSeats, p.curSeat)
+	p.addHistory(p.curSeat, p.curTile, OperateHu, 0)
 	return
 }
 
@@ -170,7 +191,7 @@ func (p *Play) IsAfterKon() bool {
 
 func (p *Play) DoSwitchSeat(seat int32) {
 	if seat == SeatNull {
-		p.curSeat = GetNextSeat(p.curSeat, 1, int(p.game.GetPlayerCount()))
+		p.curSeat = GetNextSeat(p.curSeat, 1, p.game.GetPlayerCount())
 	} else {
 		p.curSeat = seat
 	}

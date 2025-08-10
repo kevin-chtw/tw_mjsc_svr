@@ -68,7 +68,7 @@ func (s *StateDiscard) kon(tile int32) {
 }
 
 func (s *StateDiscard) hu(tile int32) {
-	s.game.SetNextState(NewStateSelfHu)
+	s.game.SetNextState(NewStateZimo)
 }
 
 func (s *StateDiscard) OnTimeout() {

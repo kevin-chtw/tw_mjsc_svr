@@ -6,13 +6,6 @@ import (
 	"github.com/kevin-chtw/tw_proto/scproto"
 )
 
-type WinAckData struct {
-	WinMode   int
-	PaoSeat   int
-	WinSeats  []int
-	IsGrabKon bool
-}
-
 type Messager struct {
 	game *Game
 	play *Play
@@ -75,6 +68,16 @@ func (m *Messager) sendDiscardAck() {
 	m.game.Send2Player(ack, game.SeatAll)
 }
 
+func (m *Messager) sendPonAck(seat int32) {
+	ponAck := &scproto.SCPonAck{
+		Seat: seat,
+		From: m.play.GetCurSeat(),
+		Tile: m.play.GetCurTile(),
+	}
+	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScPonAck{ScPonAck: ponAck}}
+	m.game.Send2Player(ack, game.SeatAll)
+}
+
 func (m *Messager) sendKonAck(seat, tile int32, konType mahjong.KonType) {
 	konAck := &scproto.SCKonAck{
 		Seat:    seat,
@@ -117,18 +120,6 @@ func (m *Messager) sendDrawAck(tile int32) {
 	}
 }
 
-func (m *Messager) SendPonAck(seat int) {
-	// 实现发送碰牌通知
-}
-
-func (m *Messager) SendTips(tipType int, seat int) {
-	// 实现发送提示信息
-}
-
-func (m *Messager) SendHandTiles() {
-	// 实现发送手牌信息
-}
-
-func (m *Messager) SendMahjongResult(isLiuJu bool, paoSeat, paoCiSeat int) {
+func (m *Messager) sendResult(isLiuJu bool, paoSeat, paoCiSeat int32) {
 	// 实现发送麻将结果
 }
