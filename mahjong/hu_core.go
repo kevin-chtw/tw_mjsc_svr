@@ -1,7 +1,6 @@
 package mahjong
 
 import (
-	"fmt"
 	"sort"
 )
 
@@ -50,13 +49,7 @@ func (hc *HuCore) initialize() {
 	hc.trainSingleKe(single, singleFZ, singleJiang, singleJiangFZ)
 	// 训练所有组合
 	hc.trainAllComb(single, hc.mapHuAll)
-	for i := 0; i < len(hc.mapHuAll); i++ {
-		fmt.Println(len(hc.mapHuAll[i]))
-	}
 	hc.trainAllCombJiang(singleJiang, hc.mapHuAll)
-	for i := 0; i < len(hc.mapHuAll); i++ {
-		fmt.Println(len(hc.mapHuAll[i]))
-	}
 	hc.trainAllComb(singleFZ, hc.mapHuAllFZ)
 	hc.trainAllCombJiang(singleJiangFZ, hc.mapHuAllFZ)
 

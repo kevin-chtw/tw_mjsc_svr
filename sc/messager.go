@@ -24,20 +24,19 @@ func (m *Messager) sendGameStartAck() {
 		TileCount: m.play.GetDealer().GetRestCount(),
 		Scores:    m.play.GetCurScores(),
 	}
-	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScGameStartAck{ScGameStartAck: startAck}}
+	ack := &scproto.SCAck{ScGameStartAck: startAck}
 	m.game.Send2Player(ack, game.SeatAll)
 }
 
 func (m *Messager) sendOpenDoorAck() {
-	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScOpenDoorAck{}}
 	count := m.game.GetPlayerCount()
 	for i := range count {
 		openDoor := &scproto.SCOpenDoorAck{
 			Seat:  i,
 			Tiles: m.play.GetPlayData(i).GetHandTiles(),
 		}
-		ack.Ack.(*scproto.SCAck_ScOpenDoorAck).ScOpenDoorAck = openDoor
-		m.game.Send2Player(openDoor, i)
+		ack := &scproto.SCAck{ScOpenDoorAck: openDoor}
+		m.game.Send2Player(ack, i)
 	}
 }
 
@@ -45,7 +44,7 @@ func (m *Messager) sendAnimationAck() {
 	animationAck := &scproto.SCAnimationAck{
 		Requestid: m.game.GetRequestID(game.SeatAll),
 	}
-	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScAnimationAck{ScAnimationAck: animationAck}}
+	ack := &scproto.SCAck{ScAnimationAck: animationAck}
 	m.game.Send2Player(ack, game.SeatAll)
 }
 
@@ -55,7 +54,7 @@ func (m *Messager) sendRequestAck(seat int32, operates *mahjong.Operates) {
 		RequestType: int32(operates.Value),
 		Requestid:   m.game.GetRequestID(seat),
 	}
-	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScRequestAck{ScRequestAck: requestAck}}
+	ack := &scproto.SCAck{ScRequestAck: requestAck}
 	m.game.Send2Player(ack, seat)
 }
 
@@ -64,7 +63,7 @@ func (m *Messager) sendDiscardAck() {
 		Seat: m.play.GetCurSeat(),
 		Tile: m.play.GetCurTile(),
 	}
-	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScDiscardAck{ScDiscardAck: discardAck}}
+	ack := &scproto.SCAck{ScDiscardAck: discardAck}
 	m.game.Send2Player(ack, game.SeatAll)
 }
 
@@ -74,7 +73,7 @@ func (m *Messager) sendPonAck(seat int32) {
 		From: m.play.GetCurSeat(),
 		Tile: m.play.GetCurTile(),
 	}
-	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScPonAck{ScPonAck: ponAck}}
+	ack := &scproto.SCAck{ScPonAck: ponAck}
 	m.game.Send2Player(ack, game.SeatAll)
 }
 
@@ -85,7 +84,7 @@ func (m *Messager) sendKonAck(seat, tile int32, konType mahjong.KonType) {
 		Tile:    tile,
 		KonType: int32(konType),
 	}
-	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScKonAck{ScKonAck: konAck}}
+	ack := &scproto.SCAck{ScKonAck: konAck}
 	m.game.Send2Player(ack, game.SeatAll)
 }
 
@@ -101,7 +100,7 @@ func (m *Messager) sendHuAck(huSeats []int32, paoSeat int32) {
 			HuTypes: m.play.GetHuResult(huSeats[i]).HuTypes,
 		}
 	}
-	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScHuAck{ScHuAck: huAck}}
+	ack := &scproto.SCAck{ScHuAck: huAck}
 	m.game.Send2Player(ack, game.SeatAll)
 }
 
@@ -110,7 +109,7 @@ func (m *Messager) sendDrawAck(tile int32) {
 		Seat: m.play.GetCurSeat(),
 		Tile: tile,
 	}
-	ack := &scproto.SCAck{Ack: &scproto.SCAck_ScDrawAck{ScDrawAck: drawAck}}
+	ack := &scproto.SCAck{ScDrawAck: drawAck}
 	m.game.Send2Player(ack, drawAck.Seat)
 	drawAck.Seat = mahjong.SeatNull
 	for i := range m.game.GetPlayerCount() {

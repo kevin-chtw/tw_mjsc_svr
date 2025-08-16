@@ -11,6 +11,7 @@ import (
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type IGame interface {
@@ -48,6 +49,7 @@ type Table struct {
 	lastHandData  any
 	ticker        *time.Ticker // 定时器
 	done          chan bool    // 停止信号
+	handlers      map[string]func(player *Player, req *cproto.GameReq)
 
 	gameMutex sync.Mutex // 保护game的对象锁
 	game      IGame      // 游戏逻辑处理接口
@@ -64,6 +66,7 @@ func NewTable(gameId, matchID, tableID int32, app pitaya.Pitaya) *Table {
 		status:        TableStatusPreparing,
 		app:           app,
 		done:          make(chan bool),
+		handlers:      make(map[string]func(player *Player, req *cproto.GameReq)),
 		gameMutex:     sync.Mutex{},
 		game:          nil,
 	}
@@ -84,24 +87,35 @@ func NewTable(gameId, matchID, tableID int32, app pitaya.Pitaya) *Table {
 	return t
 }
 
+func TypeUrl(src proto.Message) string {
+	any, err := anypb.New(&cproto.CreateRoomReq{})
+	if err != nil {
+		logrus.Error(err)
+		return ""
+	}
+	return any.GetTypeUrl()
+}
+
+func (t *Table) Init() {
+	logrus.Info("PlayerService initialized")
+
+	t.handlers[TypeUrl(&cproto.EnterGameReq{})] = t.handleEnterGame
+	t.handlers[TypeUrl(&cproto.TableMsgReq{})] = t.handleTableMsg
+}
+
 // OnPlayerMsg 处理玩家消息
 func (t *Table) OnPlayerMsg(ctx context.Context, player *Player, req *cproto.GameReq) {
-	if req.GetEnterGameReq() != nil {
-		t.handleEnterGame(player, req.GetEnterGameReq())
+	if req == nil {
+		return
 	}
-	if req.GetTableMsgReq() != nil {
-		t.gameMutex.Lock()
-		defer t.gameMutex.Unlock()
-		data := req.GetTableMsgReq().GetMsg()
-		if t.game != nil && data != nil {
 
-			t.game.OnPlayerMsg(player, data)
-		}
+	if handler, ok := t.handlers[req.Req.TypeUrl]; ok {
+		handler(player, req)
 	}
 }
 
 // handleEnterGame 处理玩家进入游戏请求
-func (t *Table) handleEnterGame(player *Player, _ *cproto.EnterGameReq) {
+func (t *Table) handleEnterGame(player *Player, _ *cproto.GameReq) {
 	if !t.isOnTable(player.id) {
 		return // 玩家不在桌上
 	}
@@ -121,39 +135,57 @@ func (t *Table) handleEnterGame(player *Player, _ *cproto.EnterGameReq) {
 	}
 }
 
-func (t *Table) broadcastTablePlayer(player *Player) {
-	msg := t.newMsg()
-	msg.Ack = &cproto.GameAck_TablePlayerAck{
-		TablePlayerAck: &cproto.TablePlayerAck{
-			Playerid: player.id,
-			Seatnum:  player.Seat,
-		},
+func (t *Table) handleTableMsg(player *Player, req *cproto.GameReq) {
+	t.gameMutex.Lock()
+	defer t.gameMutex.Unlock()
+	msg := &cproto.TableMsgReq{}
+	if err := proto.Unmarshal(req.Req.Value, msg); err != nil {
+		return
 	}
+	data := msg.GetMsg()
+	if t.game != nil && data != nil {
+		t.game.OnPlayerMsg(player, data)
+	}
+}
+
+func (t *Table) broadcastTablePlayer(player *Player) {
+	ack := &cproto.TablePlayerAck{
+		Playerid: player.id,
+		Seatnum:  player.Seat,
+	}
+	msg := t.newMsg(ack)
 	t.broadcast(msg)
 	logrus.Infof("Player %s added to table %d", player.id, t.tableID)
 }
 
 func (t *Table) SendTablePlayer(player *Player) {
-	msg := t.newMsg()
 	for _, p := range t.players {
 		if p.id != player.id {
-			msg.Ack = &cproto.GameAck_TablePlayerAck{
-				TablePlayerAck: &cproto.TablePlayerAck{
-					Playerid: p.id,
-					Seatnum:  p.Seat,
-				},
+			ack := &cproto.TablePlayerAck{
+				Playerid: p.id,
+				Seatnum:  p.Seat,
 			}
+			msg := t.newMsg(ack)
 			t.sendMsg(msg, []string{player.id})
 		}
 	}
 }
 
-func (t *Table) newMsg() *cproto.GameAck {
+func (t *Table) newMsg(ack proto.Message) *cproto.GameAck {
+	if ack == nil {
+		return nil
+	}
+
+	data, err := anypb.New(ack)
+	if err != nil {
+		return nil
+	}
 	return &cproto.GameAck{
 		Serverid: t.app.GetServerID(),
 		Gameid:   t.gameID,
 		Tableid:  t.tableID,
 		Matchid:  t.matchID,
+		Ack:      data,
 	}
 }
 
@@ -242,10 +274,9 @@ func (t *Table) NotifyGameOver() {
 }
 
 func (t *Table) Send2Match() error {
-	rsp := &cproto.CommonResponse{Err: cproto.ErrCode_OK}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := t.app.RPCTo(ctx, t.matchServerId, "match.game.message", rsp, &sproto.Match2GameAck{}); err != nil {
+	if err := t.app.RPCTo(ctx, t.matchServerId, "match.game.message", nil, &sproto.Match2GameAck{}); err != nil {
 		t.status = "preparing" // 回滚状态
 		return err
 	}
@@ -257,12 +288,10 @@ func (t *Table) Send2Player(ack proto.Message, seat int32) {
 	if err != nil {
 		logrus.Error(err.Error())
 	}
-	msg := t.newMsg()
-	msg.Ack = &cproto.GameAck_TableMsgAck{
-		TableMsgAck: &cproto.TableMsgAck{
-			Msg: data,
-		},
+	tablemsg := &cproto.TableMsgAck{
+		Msg: data,
 	}
+	msg := t.newMsg(tablemsg)
 	if seat == -1 {
 		t.broadcast(msg)
 	} else {
