@@ -1,4 +1,4 @@
-package sc
+package mjsc
 
 import (
 	"maps"

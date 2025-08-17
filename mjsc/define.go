@@ -1,4 +1,4 @@
-package sc
+package mjsc
 
 const (
 	RuleDiscardTime = iota // 出牌时间

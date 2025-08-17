@@ -1,4 +1,4 @@
-package sc
+package mjsc
 
 import (
 	"github.com/kevin-chtw/tw_common/game"
