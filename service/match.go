@@ -44,18 +44,17 @@ func (m *Match) Message(ctx context.Context, req *sproto.Match2GameReq) (*sproto
 	}
 	logger.Log.Info(req.String(), req.Req.TypeUrl)
 
+	msg, err := req.Req.UnmarshalNew()
+	if err != nil {
+		return nil, err
+	}
+
 	table := game.GetTableManager().Get(req.Matchid, req.Tableid)
 	if req.Req.TypeUrl == utils.TypeUrl(&sproto.AddTableReq{}) {
 		table = game.GetTableManager().LoadOrStore(req.Matchid, req.Tableid)
 	}
-
 	if table == nil {
 		return nil, fmt.Errorf("table not found for match %d, table %d", req.Matchid, req.Tableid)
-	}
-
-	msg, err := req.Req.UnmarshalNew()
-	if err != nil {
-		return nil, err
 	}
 
 	if handler, ok := m.handlers[req.Req.TypeUrl]; ok {
@@ -65,7 +64,6 @@ func (m *Match) Message(ctx context.Context, req *sproto.Match2GameReq) (*sproto
 		}
 		return m.newMatch2GameAck(req, rsp)
 	}
-
 	return nil, errors.New("invalid request type")
 }
 

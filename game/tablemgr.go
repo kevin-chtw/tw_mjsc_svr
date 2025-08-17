@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/kevin-chtw/tw_common/utils"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 )
 
@@ -43,7 +44,7 @@ func (tm *TableManager) LoadOrStore(matchID, tableID int32) *Table {
 	}
 
 	// 创建新表
-	table := NewTable(1, matchID, tableID, tm.app)
+	table := NewTable(utils.GameID_MahjongSC, matchID, tableID, tm.app)
 	tm.tables[key] = table
 	return table
 }

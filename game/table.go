@@ -106,7 +106,7 @@ func (t *Table) Init() {
 
 // OnPlayerMsg 处理玩家消息
 func (t *Table) OnPlayerMsg(ctx context.Context, player *Player, req *cproto.GameReq) {
-	if req == nil {
+	if req == nil || req.Req == nil {
 		return
 	}
 
@@ -132,6 +132,7 @@ func (t *Table) handleEnterGame(player *Player, _ *cproto.GameReq) {
 		t.status = TableStatusPlaying
 		t.gameMutex.Lock()
 		defer t.gameMutex.Unlock()
+		t.game = CreateGame(t.gameID, t)
 		t.game.OnGameBegin()
 	}
 }

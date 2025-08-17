@@ -27,7 +27,7 @@ func main() {
 	defer app.Shutdown()
 
 	logger.Log.Infof("Pitaya server of type %s started", serverType)
-	game.Register(1, sc.NewGame)
+	game.Register(utils.GameID_MahjongSC, sc.NewGame)
 	game.InitGame(app)
 	initServices()
 	app.Start()
