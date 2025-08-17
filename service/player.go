@@ -10,20 +10,20 @@ import (
 	"github.com/topfreegames/pitaya/v3/pkg/component"
 )
 
-// PlayerService 独立的玩家服务
-type PlayerService struct {
+// Player 独立的玩家服务
+type Player struct {
 	component.Base
 	app pitaya.Pitaya
 }
 
-// NewPlayerService 创建独立的玩家服务
-func NewPlayerService(app pitaya.Pitaya) *PlayerService {
-	return &PlayerService{
+// NewPlayer 创建独立的玩家服务
+func NewPlayer(app pitaya.Pitaya) *Player {
+	return &Player{
 		app: app,
 	}
 }
 
-func (p *PlayerService) Message(ctx context.Context, req *cproto.GameReq) {
+func (p *Player) Message(ctx context.Context, req *cproto.GameReq) {
 	logrus.Infof("Received player message: %v", req)
 	userID := p.app.GetSessionFromCtx(ctx).UID()
 	if userID == "" {

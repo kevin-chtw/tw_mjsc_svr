@@ -2,6 +2,7 @@ package game
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -206,10 +207,8 @@ func (t *Table) isAllPlayersReady() bool {
 }
 
 // HandleStartGame 处理开始游戏请求
-func (t *Table) HandleAddTable(ctx context.Context, req *sproto.AddTableReq) *sproto.AddTableAck {
-	ack := &sproto.AddTableAck{
-		ErrorCode: int32(0), // 成功
-	}
+func (t *Table) HandleAddTable(ctx context.Context, msg proto.Message) (proto.Message, error) {
+	req := msg.(*sproto.AddTableReq)
 
 	t.status = TableStatusPreparing
 	t.matchType = req.GetMatchType()
@@ -217,16 +216,13 @@ func (t *Table) HandleAddTable(ctx context.Context, req *sproto.AddTableReq) *sp
 	t.gameCount = req.GetGameCount()
 	t.playerCount = req.GetPlayerCount()
 	t.gameRule = req.GetGameConfig()
-	return ack
+	return &sproto.AddTableAck{ErrorCode: int32(0)}, nil
 }
 
-func (t *Table) HandleAddPlayer(ctx context.Context, req *sproto.AddPlayerReq) *sproto.AddPlayerAck {
-	ack := &sproto.AddPlayerAck{
-		ErrorCode: int32(0), // 成功
-	}
+func (t *Table) HandleAddPlayer(ctx context.Context, msg proto.Message) (proto.Message, error) {
+	req := msg.(*sproto.AddPlayerReq)
 	if t.isOnTable(req.Playerid) {
-		ack.ErrorCode = int32(1) // 玩家已在桌上
-		return ack
+		return nil, errors.New("player already on table")
 	}
 
 	player := playerManager.GetPlayer(req.Playerid)
@@ -234,16 +230,12 @@ func (t *Table) HandleAddPlayer(ctx context.Context, req *sproto.AddPlayerReq) *
 	player.AddScore(req.Score)
 	t.players[req.Playerid] = player
 
-	return ack
+	return &sproto.AddPlayerAck{ErrorCode: int32(0)}, nil
 }
 
-func (t *Table) HandleCancelTable(ctx context.Context, req *sproto.CancelTableReq) (ack *sproto.CancelTableAck) {
-	ack = &sproto.CancelTableAck{
-		ErrorCode: int32(0), // 成功
-	}
+func (t *Table) HandleCancelTable(ctx context.Context, msg proto.Message) (proto.Message, error) {
 	if t.status == TableStatusPlaying {
-		ack.ErrorCode = int32(1)
-		return
+		return nil, errors.New("cannot cancel a playing table")
 	}
 	// 清理玩家状态
 	for _, player := range t.players {
@@ -265,7 +257,7 @@ func (t *Table) HandleCancelTable(ctx context.Context, req *sproto.CancelTableRe
 	t.game = nil
 	t.gameMutex.Unlock()
 
-	return ack
+	return &sproto.CancelTableAck{ErrorCode: int32(0)}, nil
 }
 
 func (t *Table) NotifyGameOver() {
