@@ -3,7 +3,7 @@ package sc
 import (
 	"maps"
 
-	"github.com/kevin-chtw/tw_game_svr/mahjong"
+	"github.com/kevin-chtw/tw_common/mahjong"
 )
 
 func init() {

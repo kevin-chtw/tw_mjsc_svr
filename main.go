@@ -3,10 +3,10 @@ package main
 import (
 	"strings"
 
+	"github.com/kevin-chtw/tw_common/game"
+	"github.com/kevin-chtw/tw_common/service"
 	"github.com/kevin-chtw/tw_common/utils"
-	"github.com/kevin-chtw/tw_game_svr/game"
 	"github.com/kevin-chtw/tw_game_svr/sc"
-	"github.com/kevin-chtw/tw_game_svr/service"
 	"github.com/sirupsen/logrus"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/component"

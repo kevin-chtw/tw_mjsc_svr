@@ -3,7 +3,7 @@ package sc
 import (
 	"time"
 
-	"github.com/kevin-chtw/tw_game_svr/mahjong"
+	"github.com/kevin-chtw/tw_common/mahjong"
 	"github.com/kevin-chtw/tw_proto/scproto"
 	"google.golang.org/protobuf/proto"
 )

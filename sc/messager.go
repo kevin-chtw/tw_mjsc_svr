@@ -1,8 +1,8 @@
 package sc
 
 import (
-	"github.com/kevin-chtw/tw_game_svr/game"
-	"github.com/kevin-chtw/tw_game_svr/mahjong"
+	"github.com/kevin-chtw/tw_common/game"
+	"github.com/kevin-chtw/tw_common/mahjong"
 	"github.com/kevin-chtw/tw_proto/scproto"
 )
 

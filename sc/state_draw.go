@@ -1,6 +1,6 @@
 package sc
 
-import "github.com/kevin-chtw/tw_game_svr/mahjong"
+import "github.com/kevin-chtw/tw_common/mahjong"
 
 type StateDraw struct {
 	*State
