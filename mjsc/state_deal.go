@@ -28,11 +28,12 @@ func (s *StateDeal) OnEnter() {
 	s.AsyncMsgTimer(s.OnMsg, time.Second*5, func() { s.game.SetNextState(NewStateDiscard) })
 }
 
-func (s *StateDeal) OnMsg(seat int32, msg proto.Message) {
+func (s *StateDeal) OnMsg(seat int32, msg proto.Message) error {
 	req := msg.(*scproto.SCReq)
 
 	aniReq := req.GetScAnimationReq()
 	if aniReq != nil && seat == aniReq.Seat && s.game.IsRequestID(seat, aniReq.Requestid) {
 		s.game.SetNextState(NewStateDiscard)
 	}
+	return nil
 }

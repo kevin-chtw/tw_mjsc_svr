@@ -1,6 +1,7 @@
 package mjsc
 
 import (
+	"errors"
 	"time"
 
 	"github.com/kevin-chtw/tw_common/mahjong"
@@ -46,17 +47,18 @@ func (s *StateWait) OnEnter() {
 	s.tryHandleAction()
 }
 
-func (s *StateWait) OnMsg(seat int32, msg proto.Message) {
+func (s *StateWait) OnMsg(seat int32, msg proto.Message) error {
 	req := msg.(*scproto.SCReq)
 	optReq := req.GetScRequestReq()
 	if optReq == nil || optReq.Seat != seat || !s.game.IsRequestID(seat, optReq.Requestid) {
-		return
+		return errors.New("invalid request")
 	}
 
 	if !s.isValidOperate(seat, int(optReq.RequestType)) {
-		return
+		return errors.New("invalid operate")
 	}
 	s.setReqOperate(seat, int(optReq.RequestType))
+	return nil
 }
 
 func (s *StateWait) Timeout() {

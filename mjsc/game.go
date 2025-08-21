@@ -1,6 +1,8 @@
 package mjsc
 
 import (
+	"errors"
+
 	"github.com/kevin-chtw/tw_common/game"
 	"github.com/kevin-chtw/tw_common/mahjong"
 	"github.com/kevin-chtw/tw_proto/scproto"
@@ -29,20 +31,21 @@ func (g *Game) OnStart() {
 	g.Game.SetNextState(NewStateInit)
 }
 
-func (g *Game) OnReqMsg(seat int32, data []byte) {
+func (g *Game) OnReqMsg(seat int32, data []byte) error {
 	var msg scproto.SCReq
 	if err := protojson.Unmarshal(data, &msg); err != nil {
-		return
+		return err
 	}
 
 	if trust := msg.GetScTrustReq(); trust != nil && !trust.GetTrust() {
 		g.GetPlayer(seat).SetTrusted(false)
-		return
+		return nil
 	}
 
-	if g.Game.CurState != nil {
-		g.Game.CurState.OnPlayerMsg(seat, &msg)
+	if g.CurState == nil {
+		return errors.New("invalid state")
 	}
+	return g.CurState.OnPlayerMsg(seat, &msg)
 }
 
 func (g *Game) GetMessager() *Messager {

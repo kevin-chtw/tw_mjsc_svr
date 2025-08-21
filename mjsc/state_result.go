@@ -18,10 +18,11 @@ func NewStateResult(game mahjong.IGame) *StateResult {
 	}
 }
 
-func (s *StateResult) onMsg(seat int32, msg proto.Message) {
+func (s *StateResult) onMsg(seat int32, msg proto.Message) error {
 	req := msg.(*scproto.SCReq)
 	aniReq := req.GetScAnimationReq()
 	if aniReq != nil && seat == aniReq.Seat && s.game.IsRequestID(seat, aniReq.Requestid) {
 		s.game.NotifyGameOver()
 	}
+	return nil
 }

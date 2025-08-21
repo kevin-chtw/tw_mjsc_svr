@@ -1,6 +1,7 @@
 package mjsc
 
 import (
+	"errors"
 	"time"
 
 	"github.com/kevin-chtw/tw_common/mahjong"
@@ -32,23 +33,24 @@ func (s *StateDiscard) OnEnter() {
 	s.AsyncMsgTimer(s.OnMsg, time.Second*time.Duration(discardTime), s.OnTimeout)
 }
 
-func (s *StateDiscard) OnMsg(seat int32, msg proto.Message) {
+func (s *StateDiscard) OnMsg(seat int32, msg proto.Message) error {
 	if seat != s.GetPlay().GetCurSeat() {
-		return
+		return errors.New("invalid seat")
 	}
 
 	req := msg.(*scproto.SCReq)
 	optReq := req.GetScRequestReq()
 	if optReq == nil || optReq.Seat != seat || !s.game.IsRequestID(seat, optReq.Requestid) {
-		return
+		return errors.New("invalid request")
 	}
 
 	if !s.operates.HasOperate(optReq.RequestType) {
-		return
+		return errors.New("invalid operate")
 	}
 	if handler, exists := s.handlers[optReq.RequestType]; exists {
 		handler(optReq.Tile)
 	}
+	return nil
 }
 
 func (s *StateDiscard) discard(tile int32) {
