@@ -87,7 +87,7 @@ func (s *service) CheckCall(data *mahjong.HuData, rule *mahjong.Rule) map[int32]
 
 		for _, tile := range checkTiles {
 			// 移除当前检查的牌
-			mahjong.RemoveElement(&tempData.TilesInHand, tile)
+			tempData.TilesInHand = mahjong.RemoveElements(tempData.TilesInHand, tile, 1)
 
 			// 检查叫牌
 			fans := s.checkCallFan(&tempData, rule)
