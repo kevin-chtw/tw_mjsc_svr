@@ -11,20 +11,19 @@ import (
 
 type Game struct {
 	*mahjong.Game
+	Play       *Play
 	messager   *Messager
 	scorelator *mahjong.Scorelator
 }
 
 func NewGame(t *game.Table) game.IGame {
 	g := &Game{}
+	g.Game = mahjong.NewGame(g, t)
+	g.Play = NewPlay(g)
 	g.messager = NewMessager(g)
 	g.scorelator = mahjong.NewScroelator(g.Game)
-	g.Game = mahjong.NewGame(g, t)
-	return g
-}
 
-func (g *Game) CreatePlay() mahjong.IPlay {
-	return NewPlay(g)
+	return g
 }
 
 func (g *Game) OnStart() {

@@ -21,7 +21,7 @@ func (s *State) GetGame() *Game {
 }
 
 func (s *State) GetPlay() *Play {
-	return s.game.Play.(*Play)
+	return s.game.Play
 }
 
 func (s *State) GetMessager() *Messager {

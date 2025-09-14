@@ -14,7 +14,7 @@ type Messager struct {
 func NewMessager(game *Game) *Messager {
 	return &Messager{
 		game: game,
-		play: game.GetPlay().(*Play),
+		play: game.Play,
 	}
 }
 
