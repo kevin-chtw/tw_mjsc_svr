@@ -6,6 +6,7 @@ import (
 
 	"github.com/kevin-chtw/tw_common/mahjong"
 	"github.com/kevin-chtw/tw_proto/scproto"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -30,6 +31,7 @@ func (s *StateDiscard) OnEnter() {
 	s.operates = s.GetPlay().FetchSelfOperates()
 	s.GetMessager().sendRequestAck(s.GetPlay().GetCurSeat(), s.operates)
 	discardTime := s.game.GetRule().GetValue(RuleDiscardTime)
+	logger.Log.Infof("discard time: %d", discardTime)
 	s.AsyncMsgTimer(s.OnMsg, time.Second*time.Duration(discardTime), s.OnTimeout)
 }
 
@@ -74,5 +76,6 @@ func (s *StateDiscard) hu(tile int32) {
 }
 
 func (s *StateDiscard) OnTimeout() {
-	// 实现超时处理逻辑
+	logger.Log.Warnf("discard timeout")
+	s.discard(mahjong.TileNull)
 }

@@ -111,7 +111,7 @@ func (m *Messager) sendDrawAck(tile int32) {
 	}
 	ack := &scproto.SCAck{ScDrawAck: drawAck}
 	m.game.Send2Player(ack, drawAck.Seat)
-	drawAck.Seat = mahjong.SeatNull
+	drawAck.Tile = mahjong.TileNull
 	for i := range m.game.GetPlayerCount() {
 		if i != drawAck.Seat {
 			m.game.Send2Player(ack, i)
