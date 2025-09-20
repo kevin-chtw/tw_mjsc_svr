@@ -35,7 +35,7 @@ func (s *StateWait) OnEnter() {
 		operates := s.GetPlay().FetchWaitOperates(i)
 		s.operatesForSeats[i] = operates
 
-		if operates.Value != 0 && !trusted {
+		if operates.Value != mahjong.OperatePass && !trusted {
 			s.GetMessager().sendRequestAck(i, operates)
 		} else {
 			s.setReqOperate(i, s.getDefaultOperate(i))

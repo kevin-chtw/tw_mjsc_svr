@@ -31,7 +31,7 @@ func (s *service) init() {
 	for color := mahjong.ColorCharacter; color <= mahjong.ColorDragon; color++ {
 		pc := mahjong.PointCountByColor[color]
 		for i := 0; i < pc; i++ {
-			tile := mahjong.MakeTile(color, i, 0)
+			tile := mahjong.MakeTile(color, i)
 			if color < mahjong.ColorWind {
 				s.tiles[tile] = 4
 			}

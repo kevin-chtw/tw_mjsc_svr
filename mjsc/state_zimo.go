@@ -24,5 +24,5 @@ func (s *StateZimo) OnEnter() {
 	s.game.GetMessager().sendResult(false, mahjong.SeatNull, mahjong.SeatNull)
 
 	s.game.GetMessager().sendAnimationAck()
-	s.AsyncMsgTimer(s.onMsg, time.Second*5, s.game.NotifyGameOver)
+	s.AsyncMsgTimer(s.onMsg, time.Second*5, s.game.OnGameOver)
 }

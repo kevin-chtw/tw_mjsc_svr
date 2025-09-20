@@ -18,7 +18,8 @@ import (
 var app pitaya.Pitaya
 
 func main() {
-	serverType := "mjsc"
+
+	serverType := utils.MJSC
 	pitaya.SetLogger(utils.Logger(logrus.InfoLevel))
 
 	config := config.NewDefaultPitayaConfig()
@@ -29,7 +30,7 @@ func main() {
 	defer app.Shutdown()
 
 	logger.Log.Infof("Pitaya server of type %s started", serverType)
-	game.Register(utils.GameID_MJ_SC, mjsc.NewGame)
+	game.Register(serverType, mjsc.NewGame)
 	game.InitGame(app)
 	initServices()
 	app.Start()

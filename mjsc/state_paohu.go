@@ -25,5 +25,5 @@ func (s *StatePaohu) OnEnter() {
 	s.game.GetMessager().sendResult(true, 0, 0)
 
 	s.game.GetMessager().sendAnimationAck()
-	s.AsyncMsgTimer(s.onMsg, time.Second*5, s.game.NotifyGameOver)
+	s.AsyncMsgTimer(s.onMsg, time.Second*5, s.game.OnGameOver)
 }
