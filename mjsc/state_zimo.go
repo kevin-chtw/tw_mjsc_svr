@@ -18,9 +18,10 @@ func NewStateZimo(game mahjong.IGame, args ...any) mahjong.IState {
 
 func (s *StateZimo) OnEnter() {
 	s.huSeats = append(s.huSeats, s.GetPlay().GetCurSeat())
-	multiples := s.GetPlay().Zimo()
+	multiples := s.GetPlay().PaoHu(s.huSeats)
 	s.game.GetMessager().sendHuAck(s.huSeats, mahjong.SeatNull)
-	s.game.GetScorelator().Calculate(multiples)
+	s.game.GetScorelator().AddMultiple(mahjong.ScoreReasonHu, multiples)
+	s.game.GetScorelator().Calculate()
 	s.game.GetMessager().sendResult(false, mahjong.SeatNull, mahjong.SeatNull)
 
 	s.game.GetMessager().sendAnimationAck()

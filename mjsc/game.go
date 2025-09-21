@@ -13,7 +13,7 @@ type Game struct {
 	*mahjong.Game
 	Play       *Play
 	messager   *Messager
-	scorelator *mahjong.Scorelator
+	scorelator mahjong.Scorelator
 }
 
 func NewGame(t *game.Table, id int32) game.IGame {
@@ -21,7 +21,7 @@ func NewGame(t *game.Table, id int32) game.IGame {
 	g.Game = mahjong.NewGame(g, t, id)
 	g.Play = NewPlay(g)
 	g.messager = NewMessager(g)
-	g.scorelator = mahjong.NewScroelator(g.Game)
+	g.scorelator = mahjong.NewScorelatorOnce(g.Game, mahjong.ScoreTypeMinScore)
 
 	return g
 }
@@ -51,6 +51,9 @@ func (g *Game) GetMessager() *Messager {
 	return g.messager
 }
 
-func (g *Game) GetScorelator() *mahjong.Scorelator {
+func (g *Game) GetScorelator() mahjong.Scorelator {
+	if g.scorelator == nil {
+		g.scorelator = mahjong.NewScorelatorOnce(g.Game, mahjong.ScoreTypeMinScore)
+	}
 	return g.scorelator
 }
