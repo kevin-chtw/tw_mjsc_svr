@@ -56,9 +56,10 @@ func (s *StateDiscard) OnMsg(seat int32, msg proto.Message) error {
 }
 
 func (s *StateDiscard) discard(tile int32) {
-	s.GetPlay().Discard(tile)
-	s.GetMessager().sendDiscardAck()
-	s.game.SetNextState(NewStateWait)
+	if s.GetPlay().Discard(tile) {
+		s.GetMessager().sendDiscardAck()
+		s.game.SetNextState(NewStateWait)
+	}
 }
 
 func (s *StateDiscard) kon(tile int32) {
