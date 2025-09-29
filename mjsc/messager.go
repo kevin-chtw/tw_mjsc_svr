@@ -33,7 +33,7 @@ func (m *Messager) sendOpenDoorAck() {
 	for i := range count {
 		openDoor := &scproto.SCOpenDoorAck{
 			Seat:  i,
-			Tiles: m.play.GetPlayData(i).GetHandTiles(),
+			Tiles: m.play.GetPlayData(i).GetHandTilesInt32(),
 		}
 		ack := &scproto.SCAck{ScOpenDoorAck: openDoor}
 		m.game.Send2Player(ack, i)
@@ -61,7 +61,7 @@ func (m *Messager) sendRequestAck(seat int32, operates *mahjong.Operates) {
 func (m *Messager) sendDiscardAck() {
 	discardAck := &scproto.SCDiscardAck{
 		Seat: m.play.GetCurSeat(),
-		Tile: m.play.GetCurTile(),
+		Tile: m.play.GetCurTile().ToInt32(),
 	}
 	ack := &scproto.SCAck{ScDiscardAck: discardAck}
 	m.game.Send2Player(ack, game.SeatAll)
@@ -71,17 +71,17 @@ func (m *Messager) sendPonAck(seat int32) {
 	ponAck := &scproto.SCPonAck{
 		Seat: seat,
 		From: m.play.GetCurSeat(),
-		Tile: m.play.GetCurTile(),
+		Tile: m.play.GetCurTile().ToInt32(),
 	}
 	ack := &scproto.SCAck{ScPonAck: ponAck}
 	m.game.Send2Player(ack, game.SeatAll)
 }
 
-func (m *Messager) sendKonAck(seat, tile int32, konType mahjong.KonType) {
+func (m *Messager) sendKonAck(seat int32, tile mahjong.Tile, konType mahjong.KonType) {
 	konAck := &scproto.SCKonAck{
 		Seat:    seat,
 		From:    m.play.GetCurSeat(),
-		Tile:    tile,
+		Tile:    tile.ToInt32(),
 		KonType: int32(konType),
 	}
 	ack := &scproto.SCAck{ScKonAck: konAck}
@@ -91,7 +91,7 @@ func (m *Messager) sendKonAck(seat, tile int32, konType mahjong.KonType) {
 func (m *Messager) sendHuAck(huSeats []int32, paoSeat int32) {
 	huAck := &scproto.SCHuAck{
 		PaoSeat: paoSeat,
-		Tile:    m.play.GetCurTile(),
+		Tile:    m.play.GetCurTile().ToInt32(),
 		HuData:  make([]*scproto.SCHuData, len(huSeats)),
 	}
 	for i := range huSeats {
@@ -104,14 +104,14 @@ func (m *Messager) sendHuAck(huSeats []int32, paoSeat int32) {
 	m.game.Send2Player(ack, game.SeatAll)
 }
 
-func (m *Messager) sendDrawAck(tile int32) {
+func (m *Messager) sendDrawAck(tile mahjong.Tile) {
 	drawAck := &scproto.SCDrawAck{
 		Seat: m.play.GetCurSeat(),
-		Tile: tile,
+		Tile: tile.ToInt32(),
 	}
 	ack := &scproto.SCAck{ScDrawAck: drawAck}
 	m.game.Send2Player(ack, drawAck.Seat)
-	drawAck.Tile = mahjong.TileNull
+	drawAck.Tile = mahjong.TileNull.ToInt32()
 	for i := range m.game.GetPlayerCount() {
 		if i != drawAck.Seat {
 			m.game.Send2Player(ack, i)

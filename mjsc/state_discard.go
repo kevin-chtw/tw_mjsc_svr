@@ -13,13 +13,13 @@ import (
 type StateDiscard struct {
 	*State
 	operates *mahjong.Operates
-	handlers map[int32]func(tile int32)
+	handlers map[int32]func(tile mahjong.Tile)
 }
 
 func NewStateDiscard(game mahjong.IGame, args ...any) mahjong.IState {
 	s := &StateDiscard{
 		State:    NewState(game),
-		handlers: make(map[int32]func(tile int32)),
+		handlers: make(map[int32]func(tile mahjong.Tile)),
 	}
 	s.handlers[mahjong.OperateDiscard] = s.discard
 	s.handlers[mahjong.OperateKon] = s.kon
@@ -50,19 +50,19 @@ func (s *StateDiscard) OnMsg(seat int32, msg proto.Message) error {
 		return errors.New("invalid operate")
 	}
 	if handler, exists := s.handlers[optReq.RequestType]; exists {
-		handler(optReq.Tile)
+		handler(mahjong.Tile(optReq.Tile))
 	}
 	return nil
 }
 
-func (s *StateDiscard) discard(tile int32) {
+func (s *StateDiscard) discard(tile mahjong.Tile) {
 	if s.GetPlay().Discard(tile) {
 		s.GetMessager().sendDiscardAck()
 		s.game.SetNextState(NewStateWait)
 	}
 }
 
-func (s *StateDiscard) kon(tile int32) {
+func (s *StateDiscard) kon(tile mahjong.Tile) {
 	if s.GetPlay().TryKon(tile, mahjong.KonTypeBu) {
 		s.GetMessager().sendKonAck(s.GetPlay().GetCurSeat(), tile, mahjong.KonTypeBu)
 		s.game.SetNextState(NewStateWait)
@@ -72,7 +72,7 @@ func (s *StateDiscard) kon(tile int32) {
 	}
 }
 
-func (s *StateDiscard) hu(tile int32) {
+func (s *StateDiscard) hu(tile mahjong.Tile) {
 	s.game.SetNextState(NewStateZimo)
 }
 
