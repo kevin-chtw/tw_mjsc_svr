@@ -1,7 +1,6 @@
 package mjsc
 
 import (
-	"maps"
 	"slices"
 
 	"github.com/kevin-chtw/tw_common/mahjong"
@@ -55,7 +54,7 @@ func (s *service) GetDefaultRules() []int {
 }
 
 func (s *service) CheckHu(data *mahjong.HuData, rule *mahjong.Rule) (*mahjong.HuResult, bool) {
-	if !s.huCore.CheckBasicHu(data.TilesInHand, 0) {
+	if !s.huCore.CheckBasicHu(data.Tiles, data.LaiCount) {
 		return nil, false
 	}
 	result := &mahjong.HuResult{
@@ -67,36 +66,21 @@ func (s *service) CheckHu(data *mahjong.HuData, rule *mahjong.Rule) (*mahjong.Hu
 
 func (s *service) CheckCall(data *mahjong.HuData, rule *mahjong.Rule) map[mahjong.Tile]map[mahjong.Tile]int64 {
 	callData := make(map[mahjong.Tile]map[mahjong.Tile]int64)
-	count := len(data.TilesInHand) % 3
+	count := len(data.Tiles) % 3
 	switch count {
 	case 2:
-		// 去重处理
-		checkTiles := make([]mahjong.Tile, 0)
 		tileSet := make(map[mahjong.Tile]bool)
-		for _, tile := range data.TilesInHand {
-			if !tileSet[tile] {
-				tileSet[tile] = true
-				checkTiles = append(checkTiles, tile)
-			}
+		for _, tile := range data.Tiles {
+			tileSet[tile] = true
 		}
 
-		// 临时复制数据
 		tempData := *data
-		tempData.TilesInHand = slices.Clone(data.TilesInHand)
-
-		for _, tile := range checkTiles {
-			// 移除当前检查的牌
-			tempData.TilesInHand = mahjong.RemoveElements(tempData.TilesInHand, tile, 1)
-
-			// 检查叫牌
+		for tile := range tileSet {
+			tempData.Tiles = mahjong.RemoveElements(data.Tiles, tile, 1)
 			fans := s.checkCallFan(&tempData, rule)
 			if len(fans) > 0 {
-				callData[tile] = make(map[mahjong.Tile]int64)
-				maps.Copy(callData[tile], fans)
+				callData[tile] = fans
 			}
-
-			// 恢复牌
-			tempData.TilesInHand = append(tempData.TilesInHand, tile)
 		}
 	case 1:
 		// 直接检查叫牌
@@ -112,15 +96,13 @@ func (s *service) CheckCall(data *mahjong.HuData, rule *mahjong.Rule) map[mahjon
 func (s *service) checkCallFan(data *mahjong.HuData, rule *mahjong.Rule) map[mahjong.Tile]int64 {
 	fans := make(map[mahjong.Tile]int64)
 	testTiles := s.GetAllTiles(rule)
-	originalTiles := make([]mahjong.Tile, len(data.TilesInHand))
-	copy(originalTiles, data.TilesInHand)
-
+	originalTiles := slices.Clone(data.Tiles)
 	for tile := range testTiles {
-		data.TilesInHand = append(data.TilesInHand, tile)
+		data.Tiles = append(data.Tiles, tile)
 		if result, ok := s.CheckHu(data, rule); ok {
 			fans[tile] = result.TotalMuti
 		}
-		data.TilesInHand = originalTiles
+		data.Tiles = originalTiles
 	}
 	return fans
 }
