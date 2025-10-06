@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/kevin-chtw/tw_common/mahjong"
-	"github.com/kevin-chtw/tw_proto/scproto"
+	"github.com/kevin-chtw/tw_proto/pbmj"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -26,17 +26,17 @@ func NewStateWait(game mahjong.IGame, args ...any) mahjong.IState {
 }
 
 func (s *StateWait) OnEnter() {
-	discardSeat := s.GetPlay().GetCurSeat()
+	discardSeat := s.game.play.GetCurSeat()
 	for i := int32(0); i < s.game.GetPlayerCount(); i++ {
 		if i == discardSeat {
 			continue
 		}
 		trusted := s.game.GetPlayer(i).IsTrusted()
-		operates := s.GetPlay().FetchWaitOperates(i)
+		operates := s.game.play.FetchWaitOperates(i)
 		s.operatesForSeats[i] = operates
 
 		if operates.Value != mahjong.OperatePass && !trusted {
-			s.GetMessager().sendRequestAck(i, operates)
+			s.game.sender.SendRequestAck(i, operates)
 		} else {
 			s.setReqOperate(i, s.getDefaultOperate(i))
 		}
@@ -48,8 +48,10 @@ func (s *StateWait) OnEnter() {
 }
 
 func (s *StateWait) OnMsg(seat int32, msg proto.Message) error {
-	req := msg.(*scproto.SCReq)
-	optReq := req.GetScRequestReq()
+	optReq, ok := msg.(*pbmj.MJRequestReq)
+	if !ok {
+		return nil
+	}
 	if optReq == nil || optReq.Seat != seat || !s.game.IsRequestID(seat, optReq.Requestid) {
 		return errors.New("invalid request")
 	}
@@ -63,7 +65,7 @@ func (s *StateWait) OnMsg(seat int32, msg proto.Message) error {
 
 func (s *StateWait) Timeout() {
 	for i := int32(0); i < s.game.GetPlayerCount(); i++ {
-		if i == s.GetPlay().GetCurSeat() {
+		if i == s.game.play.GetCurSeat() {
 			continue
 		}
 		if _, ok := s.reqOperateForSeats[i]; !ok {
@@ -85,7 +87,7 @@ func (s *StateWait) getReqOperate(seat int32) (int, bool) {
 }
 
 func (s *StateWait) tryHandleAction() {
-	curSeat := s.GetPlay().GetCurSeat()
+	curSeat := s.game.play.GetCurSeat()
 	huSeats := make([]int32, 0)
 	for i := int32(1); i < s.game.GetPlayerCount(); i++ {
 		seat := mahjong.GetNextSeat(curSeat, i, s.game.GetPlayerCount())
@@ -127,14 +129,14 @@ func (s *StateWait) tryHandleAction() {
 
 func (s *StateWait) excuteOperate(seat int32, operate int) {
 	if operate == mahjong.OperateKon {
-		s.GetPlay().ZhiKon(seat)
-		s.GetMessager().sendKonAck(seat, s.GetPlay().GetCurTile(), mahjong.KonTypeZhi)
+		s.game.play.ZhiKon(seat)
+		s.game.sender.SendKonAck(seat, s.game.play.GetCurTile(), mahjong.KonTypeZhi)
 		s.toDrawState(seat)
 		return
 	}
 	if operate == mahjong.OperatePon {
-		s.GetPlay().Pon(seat)
-		s.GetMessager().sendPonAck(seat)
+		s.game.play.Pon(seat)
+		s.game.sender.SendPonAck(seat)
 		s.toDiscardState(seat)
 		return
 	}
@@ -146,12 +148,12 @@ func (s *StateWait) excuteHu(huSeats []int32) {
 }
 
 func (s *StateWait) toDrawState(seat int32) {
-	s.GetPlay().DoSwitchSeat(seat)
+	s.game.play.DoSwitchSeat(seat)
 	s.game.SetNextState(NewStateDraw)
 }
 
 func (s *StateWait) toDiscardState(seat int32) {
-	s.GetPlay().DoSwitchSeat(seat)
+	s.game.play.DoSwitchSeat(seat)
 	s.game.SetNextState(NewStateDiscard)
 }
 

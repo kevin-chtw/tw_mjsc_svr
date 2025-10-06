@@ -4,12 +4,14 @@ import "github.com/kevin-chtw/tw_common/mahjong"
 
 type Play struct {
 	*mahjong.Play
+	dealer *mahjong.Dealer
 }
 
 func NewPlay(game *Game) *Play {
 	p := &Play{
-		Play: mahjong.NewPlay(game.Game),
+		dealer: mahjong.NewDealer(game.Game),
 	}
+	p.Play = mahjong.NewPlay(game.Game, p.dealer)
 	p.ExtraHuTypes = p
 	p.PlayConf = &mahjong.PlayConf{}
 	p.RegisterSelfCheck(&mahjong.CheckerHu{}, &mahjong.CheckerTing{}, &mahjong.CheckerKon{})

@@ -16,14 +16,3 @@ func NewState(game mahjong.IGame) *State {
 		game:  g,
 	}
 }
-func (s *State) GetGame() *Game {
-	return s.game
-}
-
-func (s *State) GetPlay() *Play {
-	return s.game.Play
-}
-
-func (s *State) GetMessager() *Messager {
-	return s.game.GetMessager()
-}

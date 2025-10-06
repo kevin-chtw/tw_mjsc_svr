@@ -13,11 +13,11 @@ func NewStateDraw(game mahjong.IGame, args ...any) mahjong.IState {
 }
 
 func (s *StateDraw) OnEnter() {
-	tile := s.GetPlay().Draw()
+	tile := s.game.play.Draw()
 	if tile == mahjong.TileNull {
 		s.game.SetNextState(NewStateLiuju)
 		return
 	}
-	s.GetMessager().sendDrawAck(tile)
+	s.game.sender.SendDrawAck(tile)
 	s.game.SetNextState(NewStateDiscard)
 }
