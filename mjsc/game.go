@@ -5,8 +5,8 @@ import (
 
 	"github.com/kevin-chtw/tw_common/game"
 	"github.com/kevin-chtw/tw_common/mahjong"
-	"github.com/kevin-chtw/tw_proto/pbmj"
-	"github.com/kevin-chtw/tw_proto/pbsc"
+	"github.com/kevin-chtw/tw_proto/game/pbmj"
+	"github.com/kevin-chtw/tw_proto/game/pbsc"
 	"google.golang.org/protobuf/proto"
 )
 

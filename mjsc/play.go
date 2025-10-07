@@ -11,18 +11,29 @@ func NewPlay(game *Game) *Play {
 	p := &Play{
 		dealer: mahjong.NewDealer(game.Game),
 	}
-	p.Play = mahjong.NewPlay(game.Game, p.dealer)
-	p.ExtraHuTypes = p
+	p.Play = mahjong.NewPlay(p, game.Game, p.dealer)
 	p.PlayConf = &mahjong.PlayConf{}
-	p.RegisterSelfCheck(&mahjong.CheckerHu{}, &mahjong.CheckerTing{}, &mahjong.CheckerKon{})
+	p.RegisterSelfCheck(mahjong.NewCheckerHu(p.Play), mahjong.NewCheckerTing(p.Play), mahjong.NewCheckerKon(p.Play))
 	p.RegisterWaitCheck(&mahjong.CheckerPao{}, &mahjong.CheckerPon{}, &mahjong.CheckerZhiKon{})
 	return p
 }
 
-func (p *Play) SelfExtraFans() []int32 {
-	return []int32{}
+func (p *Play) CheckHu(data *mahjong.HuData) bool {
+	return data.CanHu()
 }
 
-func (p *Play) PaoExtraFans() []int32 {
-	return []int32{}
+func (p *Play) GetExtraHuTypes(playData *mahjong.PlayData, self bool) []int32 {
+	if self || p.PlayConf.OnlyZimo {
+		return p.selfHuTypes()
+	} else {
+		return p.paoHuTypes(playData.GetSeat())
+	}
+}
+
+func (p *Play) selfHuTypes() []int32 {
+	return []int32{HuTypeZiMo}
+}
+
+func (p *Play) paoHuTypes(seat int32) []int32 {
+	return []int32{HuTypePingHu}
 }

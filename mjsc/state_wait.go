@@ -5,8 +5,7 @@ import (
 	"time"
 
 	"github.com/kevin-chtw/tw_common/mahjong"
-	"github.com/kevin-chtw/tw_proto/pbmj"
-
+	"github.com/kevin-chtw/tw_proto/game/pbmj"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -136,7 +135,7 @@ func (s *StateWait) excuteOperate(seat int32, operate int) {
 	}
 	if operate == mahjong.OperatePon {
 		s.game.play.Pon(seat)
-		s.game.sender.SendPonAck(seat)
+		s.game.sender.SendPonAck(seat, s.game.play.GetCurTile())
 		s.toDiscardState(seat)
 		return
 	}
@@ -170,8 +169,8 @@ func (s *StateWait) isValidOperate(seat int32, operate int) bool {
 
 func (s *StateWait) getMaxOperate(seat int32) int {
 	if ops := s.operatesForSeats[seat]; ops != nil {
-		if ops.HasOperate(mahjong.OperateHu) {
-			return mahjong.OperateHu
+		if ops.HasOperate(mahjong.OperateChowTing) {
+			return mahjong.OperateChowTing
 		}
 		if ops.HasOperate(mahjong.OperateKon) {
 			return mahjong.OperateKon
