@@ -51,6 +51,10 @@ func (s *service) GetDefaultRules() []int {
 	return s.defaultRules
 }
 
+func (s *service) GetFdRules() map[string]int32 {
+	return nil
+}
+
 func (s *service) GetHuTypes(data *mahjong.HuData) []int32 {
 	return make([]int32, 0)
 }
