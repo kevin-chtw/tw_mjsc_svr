@@ -5,9 +5,9 @@ import (
 
 	"github.com/kevin-chtw/tw_common/game"
 	"github.com/kevin-chtw/tw_common/mahjong"
+	"github.com/kevin-chtw/tw_common/utils"
 	"github.com/kevin-chtw/tw_proto/game/pbmj"
 	"github.com/kevin-chtw/tw_proto/game/pbsc"
-	"google.golang.org/protobuf/proto"
 )
 
 type Game struct {
@@ -31,9 +31,9 @@ func (g *Game) OnStart() {
 	g.Game.SetNextState(NewStateInit)
 }
 
-func (g *Game) OnReqMsg(seat int32, data []byte) error {
+func (g *Game) OnReqMsg(player *game.Player, data []byte) error {
 	var msg pbsc.SCReq
-	if err := proto.Unmarshal(data, &msg); err != nil {
+	if err := utils.Unmarshal(player.Ctx, data, &msg); err != nil {
 		return err
 	}
 
@@ -44,12 +44,12 @@ func (g *Game) OnReqMsg(seat int32, data []byte) error {
 
 	trust, ok := req.(*pbmj.MJTrustReq)
 	if ok && !trust.GetTrust() {
-		g.GetPlayer(seat).SetTrusted(false)
+		g.GetPlayer(player.GetSeat()).SetTrusted(false)
 		return nil
 	}
 
 	if g.CurState == nil {
 		return errors.New("invalid state")
 	}
-	return g.CurState.OnPlayerMsg(seat, req)
+	return g.CurState.OnPlayerMsg(player.GetSeat(), req)
 }
