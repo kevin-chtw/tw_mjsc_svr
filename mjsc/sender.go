@@ -1,6 +1,7 @@
 package mjsc
 
 import (
+	"github.com/kevin-chtw/tw_common/game"
 	"github.com/kevin-chtw/tw_common/mahjong"
 	"github.com/kevin-chtw/tw_proto/game/pbsc"
 	"google.golang.org/protobuf/proto"
@@ -24,4 +25,26 @@ func (m *Sender) PackMsg(msg proto.Message) (proto.Message, error) {
 	}
 	ack := &pbsc.SCAck{Ack: data}
 	return ack, nil
+}
+
+func (s *Sender) sendSwapTilesAck() {
+	ack := &pbsc.SCSwapTilesAck{
+		Requestid: s.GetRequestID(game.SeatAll),
+	}
+	s.SendMsg(ack, game.SeatAll)
+}
+
+func (s *Sender) sendDingQueAck() {
+	ack := &pbsc.SCDingQueAck{
+		Requestid: s.GetRequestID(game.SeatAll),
+	}
+	s.SendMsg(ack, game.SeatAll)
+}
+
+func (s *Sender) sendSwapTilesResultAck(swapType int32, swaps []*pbsc.SCSwapTiles) {
+	ack := &pbsc.SCCSwapTilesResultAck{
+		SwapType:  swapType,
+		SwapTiles: swaps,
+	}
+	s.SendMsg(ack, game.SeatAll)
 }

@@ -8,8 +8,6 @@ type StateDeal struct {
 	*State
 }
 
-var Deal = StateDeal{}
-
 func NewStateDeal(game mahjong.IGame, args ...any) mahjong.IState {
 	return &StateDeal{
 		State: NewState(game),

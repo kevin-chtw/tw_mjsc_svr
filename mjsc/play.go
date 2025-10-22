@@ -4,12 +4,14 @@ import "github.com/kevin-chtw/tw_common/mahjong"
 
 type Play struct {
 	*mahjong.Play
-	dealer *mahjong.Dealer
+	dealer   *mahjong.Dealer
+	queTiles map[int32]mahjong.Tile
 }
 
 func NewPlay(game *Game) *Play {
 	p := &Play{
-		dealer: mahjong.NewDealer(game.Game),
+		dealer:   mahjong.NewDealer(game.Game),
+		queTiles: make(map[int32]mahjong.Tile),
 	}
 	p.Play = mahjong.NewPlay(p, game.Game, p.dealer)
 	p.PlayConf = &mahjong.PlayConf{}

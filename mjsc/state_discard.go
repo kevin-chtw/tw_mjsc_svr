@@ -44,7 +44,7 @@ func (s *StateDiscard) OnMsg(seat int32, msg proto.Message) error {
 	if !ok {
 		return nil
 	}
-	if optReq == nil || optReq.Seat != seat || !s.game.IsRequestID(seat, optReq.Requestid) {
+	if optReq == nil || optReq.Seat != seat || !s.game.sender.IsRequestID(seat, optReq.Requestid) {
 		return errors.New("invalid request")
 	}
 
