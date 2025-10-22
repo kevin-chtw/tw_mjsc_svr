@@ -3,17 +3,18 @@ package mjsc
 import "github.com/kevin-chtw/tw_common/mahjong"
 
 type StateLiuju struct {
-	*StateResult
+	*State
 }
 
 func NewStateLiuju(game mahjong.IGame, args ...any) mahjong.IState {
 	return &StateLiuju{
-		StateResult: NewStateResult(game),
+		State: NewState(game),
 	}
 }
 
 func (s *StateLiuju) OnEnter() {
 	s.onPlayerLiuJu()
+	s.WaitAni(s.game.OnGameOver)
 }
 
 func (s *StateLiuju) onPlayerLiuJu() {

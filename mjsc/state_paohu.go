@@ -1,18 +1,17 @@
 package mjsc
 
 import (
-	"time"
-
 	"github.com/kevin-chtw/tw_common/mahjong"
 )
 
 type StatePaohu struct {
-	*StateResult
+	*State
+	huSeats []int32
 }
 
 func NewStatePaohu(game mahjong.IGame, args ...any) mahjong.IState {
 	s := &StatePaohu{
-		StateResult: NewStateResult(game),
+		State: NewState(game),
 	}
 	s.huSeats = args[0].([]int32)
 	return s
@@ -25,6 +24,5 @@ func (s *StatePaohu) OnEnter() {
 	s.game.scorelator.Calculate()
 	s.game.sender.SendResult(false)
 
-	s.game.sender.SendAnimationAck()
-	s.AsyncMsgTimer(s.onMsg, time.Second*5, s.game.OnGameOver)
+	s.WaitAni(s.game.OnGameOver)
 }

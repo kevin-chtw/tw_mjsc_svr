@@ -1,18 +1,18 @@
 package mjsc
 
 import (
-	"time"
-
 	"github.com/kevin-chtw/tw_common/mahjong"
 )
 
 type StateZimo struct {
-	*StateResult
+	*State
+	huSeats []int32
 }
 
 func NewStateZimo(game mahjong.IGame, args ...any) mahjong.IState {
 	return &StateZimo{
-		StateResult: NewStateResult(game),
+		State:   NewState(game),
+		huSeats: make([]int32, 0),
 	}
 }
 
@@ -24,6 +24,5 @@ func (s *StateZimo) OnEnter() {
 	s.game.scorelator.Calculate()
 	s.game.sender.SendResult(false)
 
-	s.game.sender.SendAnimationAck()
-	s.AsyncMsgTimer(s.onMsg, time.Second*5, s.game.OnGameOver)
+	s.WaitAni(s.game.OnGameOver)
 }

@@ -14,7 +14,7 @@ func NewPlay(game *Game) *Play {
 	p.Play = mahjong.NewPlay(p, game.Game, p.dealer)
 	p.PlayConf = &mahjong.PlayConf{}
 	p.RegisterSelfCheck(mahjong.NewCheckerHu(p.Play), mahjong.NewCheckerTing(p.Play), mahjong.NewCheckerKon(p.Play))
-	p.RegisterWaitCheck(&mahjong.CheckerPao{}, &mahjong.CheckerPon{}, &mahjong.CheckerZhiKon{})
+	p.RegisterWaitCheck(mahjong.NewCheckerPao(p.Play), mahjong.NewCheckerPao(p.Play), mahjong.NewCheckerZhiKon(p.Play))
 	return p
 }
 
