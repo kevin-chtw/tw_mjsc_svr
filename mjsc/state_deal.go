@@ -19,5 +19,9 @@ func (s *StateDeal) OnEnter() {
 
 	s.game.sender.SendOpenDoorAck()
 	s.game.sender.SendAnimationAck()
-	s.WaitAni(func() { s.game.SetNextState(NewStateDiscard) })
+	if s.game.GetRule().GetValue(RuleDiscardTime) != 0 {
+		s.WaitAni(func() { s.game.SetNextState(NewStateSwapTiles) })
+	} else {
+		s.WaitAni(func() { s.game.SetNextState(NewStateDingque) })
+	}
 }

@@ -42,9 +42,19 @@ func (s *Sender) sendDingQueAck() {
 }
 
 func (s *Sender) sendSwapTilesResultAck(swapType int32, swaps []*pbsc.SCSwapTiles) {
-	ack := &pbsc.SCCSwapTilesResultAck{
+	ack := &pbsc.SCSwapTilesResultAck{
 		SwapType:  swapType,
 		SwapTiles: swaps,
+	}
+	s.SendMsg(ack, game.SeatAll)
+}
+
+func (s *Sender) sendDingQueResultAck(queColors map[int32]mahjong.EColor) {
+	ack := &pbsc.SCDingQueResultAck{
+		Colors: make([]int32, 0),
+	}
+	for i := 0; i < len(queColors); i++ {
+		ack.Colors = append(ack.Colors, int32(queColors[int32(i)]))
 	}
 	s.SendMsg(ack, game.SeatAll)
 }

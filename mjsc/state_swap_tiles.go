@@ -7,7 +7,6 @@ import (
 
 	"github.com/kevin-chtw/tw_common/mahjong"
 	"github.com/kevin-chtw/tw_proto/game/pbsc"
-	"github.com/topfreegames/pitaya/v3/pkg/logger"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -16,7 +15,7 @@ type StateSwapTiles struct {
 	swapTiles []*pbsc.SCSwapTiles
 }
 
-func NewSwapTiles(game mahjong.IGame, args ...any) mahjong.IState {
+func NewStateSwapTiles(game mahjong.IGame, args ...any) mahjong.IState {
 	s := &StateSwapTiles{
 		State: NewState(game),
 	}
@@ -26,15 +25,10 @@ func NewSwapTiles(game mahjong.IGame, args ...any) mahjong.IState {
 
 func (s *StateSwapTiles) OnEnter() {
 	s.game.sender.sendSwapTilesAck()
-
 	s.AsyncMsgTimer(s.OnMsg, time.Second*time.Duration(8), s.OnTimeout)
 }
 
 func (s *StateSwapTiles) OnMsg(seat int32, msg proto.Message) error {
-	if seat != s.game.play.GetCurSeat() {
-		return errors.New("invalid seat")
-	}
-
 	optReq, ok := msg.(*pbsc.SCSwapTilesReq)
 	if !ok {
 		return nil
@@ -52,7 +46,6 @@ func (s *StateSwapTiles) OnMsg(seat int32, msg proto.Message) error {
 	// 检查是否所有玩家都已换牌
 	if s.allPlayersSwapped() {
 		s.executeSwap()
-		s.game.SetNextState(NewStateQue)
 	}
 	return nil
 }
@@ -79,10 +72,11 @@ func (s *StateSwapTiles) executeSwap() {
 
 	for _, st := range s.swapTiles {
 		tiles := mahjong.Int32Tile(st.Tiles)
-		s.game.play.GetPlayData(st.From).ExchangeOut(tiles)
-		s.game.play.GetPlayData(st.To).ExchangeIn(tiles)
+		s.game.play.GetPlayData(st.From).SwapOut(tiles)
+		s.game.play.GetPlayData(st.To).SwapIn(tiles)
 	}
 	s.game.sender.sendSwapTilesResultAck(swapType, s.swapTiles)
+	s.game.SetNextState(NewStateDingque)
 }
 
 func (s *StateSwapTiles) swapClockwise() {
@@ -107,12 +101,9 @@ func (s *StateSwapTiles) swapCross() {
 }
 
 func (s *StateSwapTiles) OnTimeout() {
-	logger.Log.Warnf("swap tiles timeout")
-
-	// 为未换牌的玩家生成默认换牌
 	for i := int32(0); i < s.game.GetPlayerCount(); i++ {
 		if s.swapTiles[i] == nil {
-			tiles := s.game.play.GetPlayData(i).GetExchangeRecommend()
+			tiles := s.game.play.GetPlayData(i).GetSwapRecommend()
 			s.swapTiles[i] = &pbsc.SCSwapTiles{
 				From:  i,
 				Tiles: mahjong.TilesInt32(tiles), // 随机换3张牌
@@ -120,5 +111,4 @@ func (s *StateSwapTiles) OnTimeout() {
 		}
 	}
 	s.executeSwap()
-	s.game.SetNextState(NewStateQue)
 }
