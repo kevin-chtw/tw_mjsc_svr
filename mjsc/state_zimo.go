@@ -1,7 +1,7 @@
 package mjsc
 
 import (
-	"github.com/kevin-chtw/tw_common/mahjong"
+	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
 )
 
 type StateZimo struct {

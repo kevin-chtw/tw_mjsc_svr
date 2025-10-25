@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/kevin-chtw/tw_common/mahjong"
+	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
 	"github.com/kevin-chtw/tw_proto/game/pbmj"
 	"github.com/topfreegames/pitaya/v3/pkg/logger"
 	"google.golang.org/protobuf/proto"

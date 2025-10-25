@@ -3,8 +3,8 @@ package mjsc
 import (
 	"errors"
 
-	"github.com/kevin-chtw/tw_common/game"
-	"github.com/kevin-chtw/tw_common/mahjong"
+	"github.com/kevin-chtw/tw_common/gamebase/game"
+	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
 	"github.com/kevin-chtw/tw_common/utils"
 	"github.com/kevin-chtw/tw_proto/game/pbmj"
 	"github.com/kevin-chtw/tw_proto/game/pbsc"

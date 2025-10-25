@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/kevin-chtw/tw_common/mahjong"
+	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
 	"github.com/kevin-chtw/tw_proto/game/pbsc"
 	"google.golang.org/protobuf/proto"
 )

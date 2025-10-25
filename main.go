@@ -3,8 +3,8 @@ package main
 import (
 	"strings"
 
-	"github.com/kevin-chtw/tw_common/game"
-	"github.com/kevin-chtw/tw_common/service"
+	"github.com/kevin-chtw/tw_common/gamebase/game"
+	"github.com/kevin-chtw/tw_common/gamebase/service"
 	"github.com/kevin-chtw/tw_common/utils"
 	"github.com/kevin-chtw/tw_game_svr/mjsc"
 	"github.com/sirupsen/logrus"

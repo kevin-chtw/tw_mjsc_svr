@@ -3,7 +3,7 @@ package mjsc
 import (
 	"time"
 
-	"github.com/kevin-chtw/tw_common/mahjong"
+	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
 )
 
 type StateInit struct {

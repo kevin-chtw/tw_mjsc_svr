@@ -1,6 +1,6 @@
 package mjsc
 
-import "github.com/kevin-chtw/tw_common/mahjong"
+import "github.com/kevin-chtw/tw_common/gamebase/mahjong"
 
 type Play struct {
 	*mahjong.Play

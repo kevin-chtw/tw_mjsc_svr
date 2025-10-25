@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/kevin-chtw/tw_common/mahjong"
+	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
 	"github.com/kevin-chtw/tw_proto/game/pbmj"
 	"google.golang.org/protobuf/proto"
 )
