@@ -39,7 +39,7 @@ func main() {
 
 func initServices() {
 	remote := service.NewRemote(app)
-	app.RegisterRemote(remote, component.WithName("match"), component.WithNameFunc(strings.ToLower))
+	app.RegisterRemote(remote, component.WithName("remote"), component.WithNameFunc(strings.ToLower))
 
 	playersvc := service.NewPlayer(app)
 	app.Register(playersvc, component.WithName("player"), component.WithNameFunc(strings.ToLower))
