@@ -8,6 +8,7 @@ import (
 	"github.com/kevin-chtw/tw_common/utils"
 	"github.com/kevin-chtw/tw_proto/game/pbmj"
 	"github.com/kevin-chtw/tw_proto/game/pbsc"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
 )
 
 type Game struct {
@@ -32,6 +33,7 @@ func (g *Game) OnStart() {
 }
 
 func (g *Game) OnReqMsg(player *game.Player, data []byte) error {
+	logger.Log.Info(string(data))
 	var msg pbsc.SCReq
 	if err := utils.Unmarshal(player.Ctx, data, &msg); err != nil {
 		return err

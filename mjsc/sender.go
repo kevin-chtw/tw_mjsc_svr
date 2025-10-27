@@ -10,10 +10,11 @@ import (
 
 type Sender struct {
 	*mahjong.Sender
+	game *Game
 }
 
 func NewSender(game *Game) *Sender {
-	s := &Sender{}
+	s := &Sender{game: game}
 	s.Sender = mahjong.NewSender(game.Game, game.play.Play, s)
 	return s
 }
@@ -41,12 +42,40 @@ func (s *Sender) sendDingQueAck() {
 	s.SendMsg(ack, game.SeatAll)
 }
 
+func (s *Sender) sendSwapFinishAck(seat int32, tiles []int32) {
+	ack := &pbsc.SCSwapFinishAck{
+		Seat:  seat,
+		Tiles: tiles,
+	}
+	s.SendMsg(ack, seat)
+	ack.Tiles = nil
+	for i := int32(0); i < s.game.GetPlayerCount(); i++ {
+		if i != seat {
+			s.SendMsg(ack, i)
+		}
+	}
+}
+
 func (s *Sender) sendSwapTilesResultAck(swapType int32, swaps []*pbsc.SCSwapTiles) {
 	ack := &pbsc.SCSwapTilesResultAck{
 		SwapType:  swapType,
 		SwapTiles: swaps,
 	}
 	s.SendMsg(ack, game.SeatAll)
+}
+
+func (s *Sender) sendDingQueFinishAck(seat int32, color int32) {
+	ack := &pbsc.SCDingQueFinishAck{
+		Seat:  seat,
+		Color: color,
+	}
+	s.SendMsg(ack, seat)
+	ack.Color = int32(mahjong.ColorUndefined)
+	for i := int32(0); i < s.game.GetPlayerCount(); i++ {
+		if i != seat {
+			s.SendMsg(ack, i)
+		}
+	}
 }
 
 func (s *Sender) sendDingQueResultAck(queColors map[int32]mahjong.EColor) {
