@@ -41,6 +41,7 @@ func (s *StateDingque) OnMsg(seat int32, msg proto.Message) error {
 	if req.Color < int32(mahjong.ColorCharacter) || req.Color > int32(mahjong.ColorDot) {
 		return errors.New("invalid color")
 	}
+	s.game.sender.SendHandleFinAck(seat, "dingque")
 	s.game.play.queColors[seat] = mahjong.EColor(req.Color)
 	if len(s.game.play.queColors) >= int(s.game.GetPlayerCount()) {
 		s.dingque()

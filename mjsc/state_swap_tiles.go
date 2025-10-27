@@ -37,7 +37,13 @@ func (s *StateSwapTiles) OnMsg(seat int32, msg proto.Message) error {
 		return errors.New("invalid request")
 	}
 
-	s.game.play.GetPlayData(seat).CanExchangeOut(mahjong.Int32Tile(optReq.Tiles))
+	if s.swapTiles[seat] != nil {
+		return errors.New("already swapped")
+	}
+
+	if !s.game.play.GetPlayData(seat).CanExchangeOut(mahjong.Int32Tile(optReq.Tiles)) {
+		return errors.New("invalid tiles")
+	}
 	s.swapTiles[seat] = &pbsc.SCSwapTiles{
 		From:  seat,
 		Tiles: optReq.Tiles,
