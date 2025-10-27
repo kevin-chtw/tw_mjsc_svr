@@ -79,6 +79,9 @@ func (s *StateDiscard) hu(tile mahjong.Tile) {
 }
 
 func (s *StateDiscard) OnTimeout() {
+	if s.game.MatchType == "fdtable" {
+		return
+	}
 	logger.Log.Warnf("discard timeout")
 	s.discard(mahjong.TileNull)
 }

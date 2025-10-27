@@ -101,6 +101,9 @@ func (s *StateSwapTiles) swapCross() {
 }
 
 func (s *StateSwapTiles) OnTimeout() {
+	if s.game.MatchType == "fdtable" {
+		return
+	}
 	for i := int32(0); i < s.game.GetPlayerCount(); i++ {
 		if s.swapTiles[i] == nil {
 			tiles := s.game.play.GetPlayData(i).GetSwapRecommend()

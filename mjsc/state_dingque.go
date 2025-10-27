@@ -49,6 +49,9 @@ func (s *StateDingque) OnMsg(seat int32, msg proto.Message) error {
 }
 
 func (s *StateDingque) OnTimeout() {
+	if s.game.MatchType == "fdtable" {
+		return
+	}
 	for i := int32(0); i < s.game.GetPlayerCount(); i++ {
 		if _, ok := s.game.play.queColors[i]; !ok {
 			s.game.play.queColors[i] = s.game.play.queRecommand(i)
