@@ -20,8 +20,8 @@ func (s *StateZimo) OnEnter() {
 	s.huSeats = append(s.huSeats, s.game.play.GetCurSeat())
 	multiples := s.game.play.PaoHu(s.huSeats)
 	s.game.sender.SendHuAck(s.huSeats, mahjong.SeatNull)
-	s.game.scorelator.AddMultiple(mahjong.ScoreReasonHu, multiples)
-	s.game.scorelator.Calculate()
+	scores := s.game.scorelator.Calculate(multiples)
+	s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonHu, scores, s.game.play.GetCurTile(), mahjong.SeatNull, s.huSeats)
 	s.game.sender.SendResult(false)
 
 	s.WaitAni(s.game.OnGameOver)

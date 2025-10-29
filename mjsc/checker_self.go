@@ -11,12 +11,12 @@ func newCheckerHu(play *Play) mahjong.CheckerSelf {
 	return &checkerHu{play: play, checker: mahjong.NewCheckerHu(play.Play)}
 }
 
-func (c *checkerHu) Check(opt *mahjong.Operates, tips []int) []int {
+func (c *checkerHu) Check(opt *mahjong.Operates) {
 	tile := c.play.getQueTile(c.play.GetCurSeat())
 	if tile != mahjong.TileNull {
-		return tips
+		return
 	}
-	return c.checker.Check(opt, tips)
+	c.checker.Check(opt)
 }
 
 // 杠检查器
@@ -27,13 +27,12 @@ type checkerKon struct {
 func newCheckerKon(play *Play) mahjong.CheckerSelf {
 	return &checkerKon{play: play}
 }
-func (c *checkerKon) Check(opt *mahjong.Operates, tips []int) []int {
+func (c *checkerKon) Check(opt *mahjong.Operates) {
 	if opt.IsMustHu {
-		return tips
+		return
 	}
 	seat := c.play.GetCurSeat()
 	if c.play.GetPlayData(seat).CanSelfKonByQue(c.play.queColors[seat]) {
 		opt.AddOperate(mahjong.OperateKon)
 	}
-	return tips
 }

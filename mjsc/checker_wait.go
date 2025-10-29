@@ -10,12 +10,12 @@ type checkerPao struct {
 func newCheckerPao(play *Play) mahjong.CheckerWait {
 	return &checkerPao{play: play, checker: mahjong.NewCheckerPao(play.Play)}
 }
-func (c *checkerPao) Check(seat int32, opt *mahjong.Operates, tips []int) []int {
+func (c *checkerPao) Check(seat int32, opt *mahjong.Operates) {
 	tile := c.play.GetCurTile()
 	if tile.Color() == c.play.getQueTile(seat).Color() {
-		return tips
+		return
 	}
-	return c.checker.Check(seat, opt, tips)
+	c.checker.Check(seat, opt)
 }
 
 type checkerPon struct {
@@ -26,12 +26,12 @@ type checkerPon struct {
 func newCheckerPon(play *Play) mahjong.CheckerWait {
 	return &checkerPon{play: play, checker: mahjong.NewCheckerPon(play.Play)}
 }
-func (c *checkerPon) Check(seat int32, opt *mahjong.Operates, tips []int) []int {
+func (c *checkerPon) Check(seat int32, opt *mahjong.Operates) {
 	tile := c.play.GetCurTile()
 	if tile.Color() == c.play.getQueTile(seat).Color() {
-		return tips
+		return
 	}
-	return c.checker.Check(seat, opt, tips)
+	c.checker.Check(seat, opt)
 }
 
 type checkerZhiKon struct {
@@ -42,10 +42,10 @@ type checkerZhiKon struct {
 func newCheckerZhiKon(play *Play) mahjong.CheckerWait {
 	return &checkerZhiKon{play: play, checker: mahjong.NewCheckerZhiKon(play.Play)}
 }
-func (c *checkerZhiKon) Check(seat int32, opt *mahjong.Operates, tips []int) []int {
+func (c *checkerZhiKon) Check(seat int32, opt *mahjong.Operates) {
 	tile := c.play.GetCurTile()
 	if tile.Color() == c.play.getQueTile(seat).Color() {
-		return tips
+		return
 	}
-	return c.checker.Check(seat, opt, tips)
+	c.checker.Check(seat, opt)
 }

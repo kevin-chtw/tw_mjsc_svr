@@ -13,10 +13,6 @@ func NewStateLiuju(game mahjong.IGame, args ...any) mahjong.IState {
 }
 
 func (s *StateLiuju) OnEnter() {
-	s.onPlayerLiuJu()
+	s.game.sender.SendResult(true)
 	s.WaitAni(s.game.OnGameOver)
-}
-
-func (s *StateLiuju) onPlayerLiuJu() {
-	// 实现流局处理逻辑
 }

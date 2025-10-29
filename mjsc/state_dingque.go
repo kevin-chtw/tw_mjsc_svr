@@ -54,9 +54,9 @@ func (s *StateDingque) OnTimeout() {
 	if s.game.MatchType == "fdtable" {
 		return
 	}
-	for i := int32(0); i < s.game.GetPlayerCount(); i++ {
-		if _, ok := s.game.play.queColors[i]; !ok {
-			s.game.play.queColors[i] = s.game.play.queRecommand(i)
+	for seat := range s.game.GetPlayerCount() {
+		if _, ok := s.game.play.queColors[seat]; !ok {
+			s.game.play.queColors[seat] = s.game.play.queRecommand(seat)
 		}
 	}
 	s.dingque()
@@ -64,5 +64,9 @@ func (s *StateDingque) OnTimeout() {
 
 func (s *StateDingque) dingque() {
 	s.game.sender.sendDingQueResultAck(s.game.play.queColors)
+	for seat := range s.game.GetPlayerCount() {
+		s.game.play.FreshCallData(seat)
+		s.game.sender.SendCallDataAck(seat)
+	}
 	s.game.SetNextState(NewStateDiscard)
 }
