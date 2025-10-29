@@ -15,11 +15,10 @@ func NewPlay(game *Game) *Play {
 	}
 	p.Play = mahjong.NewPlay(p, game.Game, p.dealer)
 	p.PlayConf = &mahjong.PlayConf{}
-	p.RegisterSelfCheck(mahjong.NewCheckerHu(p.Play), mahjong.NewCheckerTing(p.Play), mahjong.NewCheckerKon(p.Play))
-	p.RegisterWaitCheck(mahjong.NewCheckerPao(p.Play), mahjong.NewCheckerPao(p.Play), mahjong.NewCheckerZhiKon(p.Play))
+	p.RegisterSelfCheck(newCheckerHu(p), newCheckerKon(p))
+	p.RegisterWaitCheck(newCheckerPao(p), newCheckerZhiKon(p), newCheckerPon(p))
 	return p
 }
-
 func (p *Play) queRecommand(seat int32) mahjong.EColor {
 	tiles := p.GetPlayData(seat).GetHandTiles()
 	colors := make(map[mahjong.EColor]int32)
@@ -39,6 +38,26 @@ func (p *Play) queRecommand(seat int32) mahjong.EColor {
 		}
 	}
 	return bestColor
+}
+
+func (p *Play) discard(tile mahjong.Tile) bool {
+	seat := p.GetCurSeat()
+	queTile := p.getQueTile(seat)
+	if queTile != mahjong.TileNull && tile.Color() != queTile.Color() {
+		tile = queTile
+	}
+	return p.Play.Discard(tile)
+}
+
+func (p *Play) getQueTile(seat int32) mahjong.Tile {
+	color := p.queColors[seat]
+	tiles := p.GetPlayData(seat).GetHandTiles()
+	for _, t := range tiles {
+		if t.Color() == color {
+			return t
+		}
+	}
+	return mahjong.TileNull
 }
 
 func (p *Play) CheckHu(data *mahjong.HuData) bool {

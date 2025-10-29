@@ -50,10 +50,9 @@ func (s *StateSwapTiles) OnMsg(seat int32, msg proto.Message) error {
 	}
 
 	// 检查是否所有玩家都已换牌
+	s.game.sender.sendSwapFinishAck(seat, optReq.Tiles)
 	if s.allPlayersSwapped() {
 		s.executeSwap()
-	} else {
-		s.game.sender.sendSwapFinishAck(seat, optReq.Tiles)
 	}
 	return nil
 }

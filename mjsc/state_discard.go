@@ -58,7 +58,7 @@ func (s *StateDiscard) OnMsg(seat int32, msg proto.Message) error {
 }
 
 func (s *StateDiscard) discard(tile mahjong.Tile) {
-	if s.game.play.Discard(tile) {
+	if s.game.play.discard(tile) {
 		s.game.sender.SendDiscardAck()
 		s.game.SetNextState(NewStateWait)
 	}
@@ -67,7 +67,7 @@ func (s *StateDiscard) discard(tile mahjong.Tile) {
 func (s *StateDiscard) kon(tile mahjong.Tile) {
 	if s.game.play.TryKon(tile, mahjong.KonTypeBu) {
 		s.game.sender.SendKonAck(s.game.play.GetCurSeat(), tile, mahjong.KonTypeBu)
-		s.game.SetNextState(NewStateWait)
+		s.game.SetNextState(NewStateAfterBukon)
 	} else if s.game.play.TryKon(tile, mahjong.KonTypeAn) {
 		s.game.sender.SendKonAck(s.game.play.GetCurSeat(), tile, mahjong.KonTypeAn)
 		s.game.SetNextState(NewStateDraw)

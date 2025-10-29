@@ -18,7 +18,7 @@ func NewStatePaohu(game mahjong.IGame, args ...any) mahjong.IState {
 }
 
 func (s *StatePaohu) OnEnter() {
-	multiples := s.game.play.Zimo()
+	multiples := s.game.play.PaoHu(s.huSeats)
 	s.game.sender.SendHuAck(s.huSeats, s.game.play.GetCurSeat())
 	s.game.scorelator.AddMultiple(mahjong.ScoreReasonHu, multiples)
 	s.game.scorelator.Calculate()

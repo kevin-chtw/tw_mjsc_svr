@@ -59,6 +59,7 @@ func (s *StateWait) OnMsg(seat int32, msg proto.Message) error {
 		return errors.New("invalid operate")
 	}
 	s.setReqOperate(seat, int(optReq.RequestType))
+	s.tryHandleAction()
 	return nil
 }
 
@@ -172,8 +173,8 @@ func (s *StateWait) isValidOperate(seat int32, operate int) bool {
 
 func (s *StateWait) getMaxOperate(seat int32) int {
 	if ops := s.operatesForSeats[seat]; ops != nil {
-		if ops.HasOperate(mahjong.OperateChowTing) {
-			return mahjong.OperateChowTing
+		if ops.HasOperate(mahjong.OperateHu) {
+			return mahjong.OperateHu
 		}
 		if ops.HasOperate(mahjong.OperateKon) {
 			return mahjong.OperateKon
