@@ -56,7 +56,9 @@ func (s *StateDingque) OnTimeout() {
 	}
 	for seat := range s.game.GetPlayerCount() {
 		if _, ok := s.game.play.queColors[seat]; !ok {
-			s.game.play.queColors[seat] = s.game.play.queRecommand(seat)
+			color := s.game.play.queRecommand(seat)
+			s.game.sender.sendDingQueFinishAck(seat, int32(color))
+			s.game.play.queColors[seat] = color
 		}
 	}
 	s.dingque()

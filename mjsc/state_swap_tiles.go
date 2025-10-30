@@ -113,10 +113,11 @@ func (s *StateSwapTiles) OnTimeout() {
 	}
 	for i := int32(0); i < s.game.GetPlayerCount(); i++ {
 		if s.swapTiles[i] == nil {
-			tiles := s.game.play.GetPlayData(i).GetSwapRecommend()
+			tiles := mahjong.TilesInt32(s.game.play.GetPlayData(i).GetSwapRecommend())
+			s.game.sender.sendSwapFinishAck(i, tiles)
 			s.swapTiles[i] = &pbsc.SCSwapTiles{
 				From:  i,
-				Tiles: mahjong.TilesInt32(tiles), // 随机换3张牌
+				Tiles: tiles, // 随机换3张牌
 			}
 		}
 	}
