@@ -73,9 +73,9 @@ func (p *Play) GetExtraHuTypes(playData *mahjong.PlayData, self bool) []int32 {
 }
 
 func (p *Play) selfHuTypes() []int32 {
-	return []int32{HuTypeZiMo}
+	return []int32{}
 }
 
 func (p *Play) paoHuTypes(seat int32) []int32 {
-	return []int32{HuTypePingHu}
+	return []int32{}
 }

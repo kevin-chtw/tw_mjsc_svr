@@ -56,7 +56,7 @@ func (s *service) GetFdRules() map[string]int32 {
 }
 
 func (s *service) GetHuTypes(data *mahjong.HuData) []int32 {
-	return make([]int32, 0)
+	return newHuData(data).getHuTypes()
 }
 
 func (s *service) TotalMuti(types []int32) int64 {
