@@ -19,7 +19,7 @@ func NewService() mahjong.IService {
 	s := &service{
 		tiles:        make(map[mahjong.Tile]int),
 		tilesFeng:    make(map[mahjong.Tile]int),
-		defaultRules: []int{10, 8, 1},
+		defaultRules: []int{10, 8, 1, 0},
 		huCore:       mahjong.NewHuCore(14),
 	}
 	s.init()
@@ -28,7 +28,7 @@ func NewService() mahjong.IService {
 func (s *service) init() {
 	for color := mahjong.ColorCharacter; color <= mahjong.ColorDragon; color++ {
 		pc := mahjong.PointCountByColor[color]
-		for i := 0; i < pc; i++ {
+		for i := range pc {
 			tile := mahjong.MakeTile(color, i)
 			if color < mahjong.ColorWind {
 				s.tiles[tile] = 4
@@ -59,6 +59,6 @@ func (s *service) GetHuTypes(data *mahjong.HuData) []int32 {
 	return newHuData(data).getHuTypes()
 }
 
-func (s *service) TotalMuti(types []int32) int64 {
-	return totalMuti(types)
+func (s *service) TotalMuti(types []int32, conf *mahjong.Rule) int64 {
+	return totalMuti(types, conf)
 }

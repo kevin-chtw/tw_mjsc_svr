@@ -60,7 +60,16 @@ func (p *Play) getQueTile(seat int32) mahjong.Tile {
 	return mahjong.TileNull
 }
 
-func (p *Play) CheckHu(data *mahjong.HuData) bool {
+func (p *Play) CheckHu(data *mahjong.HuData) mahjong.HuCoreType {
+	if p.getQueTile(data.GetSeat()) != mahjong.TileNull {
+		return mahjong.HU_NON
+	}
+
+	tiles, laiCount := data.CountLaiZi()
+	htype := mahjong.Check7dui(tiles, laiCount)
+	if htype != mahjong.HU_NON {
+		return htype
+	}
 	return data.CanHu()
 }
 
@@ -73,9 +82,35 @@ func (p *Play) GetExtraHuTypes(playData *mahjong.PlayData, self bool) []int32 {
 }
 
 func (p *Play) selfHuTypes() []int32 {
-	return []int32{}
+	types := make([]int32, 0)
+	seat := p.GetCurSeat()
+	if !p.HasOperate(seat) {
+		if seat == p.GetBanker() {
+			types = append(types, TianHu)
+		} else {
+			types = append(types, DiHu)
+		}
+		return types
+	}
+
+	types = append(types, ZiMo)
+	if p.IsAfterKon() {
+		types = append(types, KonKai)
+	}
+	if p.dealer.GetRestCount() == 0 {
+		types = append(types, HaiDi)
+	}
+	return types
 }
 
-func (p *Play) paoHuTypes(seat int32) []int32 {
-	return []int32{}
+func (p *Play) paoHuTypes(_ int32) []int32 {
+	types := make([]int32, 0)
+	types = append(types, PaoHu)
+	if p.IsAfterKon() {
+		types = append(types, KonPao)
+	}
+	if p.dealer.GetRestCount() == 0 {
+		types = append(types, HaiDiPao)
+	}
+	return types
 }

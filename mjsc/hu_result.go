@@ -1,60 +1,80 @@
 package mjsc
 
-import "github.com/kevin-chtw/tw_common/gamebase/mahjong"
+import (
+	"slices"
 
-const (
-	// 基础番型 (按倍数从小到大)
-	PingHu        = iota //四副顺子/刻子 + 一对将 0 (1倍)
-	PonPonHu             //四副刻子+一对将 1 (2倍)
-	QiDui                //7对独立牌 2 (4倍)
-	QinYiSe              //全为同一花色 3 (4倍)
-	LongQiDui            //七对子中含四张相同牌 4 (8倍)
-	JinGouDiao           //碰碰胡+单吊 5 (8倍)
-	QinPon               //清一色+碰碰胡 6 (8倍)
-	QinQiDui             //清一色+七对 7 (16倍)
-	QinJinGouDiao        //清一色+碰碰胡+单吊 8 (16倍)
-	QingLongQiDui        //清一色+龙七对 9 (32倍)
-
-	// 特殊番型 (按倍数从小到大)
-	JiaWuXing        //夹心五(46胡5) 10 (2倍)
-	JueZhang         //胡绝张 11 (2倍)
-	KaBianZhang      //卡/边张(37或13卡2) 12 (2倍)
-	YiTiaoLong       //同一花色的123456789 13 (4倍)
-	MenQinZhongZhang //门清+2-8的牌 14 (4倍)
-	YaoJiuJiangDui   //刻子/顺子全带幺九牌 15 (8倍)
-	JiangDui258      //刻子和将对全由258组成 16 (8倍)
-	TianHu           //庄家14张直接胡牌 17 (16倍)
-	DiHu             //闲家自摸首轮胡牌 18 (16倍)
+	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
 )
 
-var multiples = map[int32]int64{
-	// 基础番型
-	PingHu:        1,  // 平胡
-	PonPonHu:      2,  // 碰碰胡
-	QiDui:         4,  // 七对
-	QinYiSe:       4,  // 清一色
-	LongQiDui:     8,  // 龙七对
-	JinGouDiao:    8,  // 金勾勾
-	QinPon:        8,  // 清碰
-	QinQiDui:      16, // 清七对
-	QinJinGouDiao: 16, // 清金勾
-	QingLongQiDui: 32, // 清龙七对
+const (
+	// huMode
+	PaoHu      = 1 //点炮胡
+	ZiMo       = 2 //自摸胡
+	KonKai     = 3 //杠开
+	KonPao     = 4 //杠炮
+	QiangKonHu = 5 //抢杠胡
+	HaiDi      = 6 //海底
+	HaiDiPao   = 7 //海底炮
+	TianHu     = 8 //天胡
+	DiHu       = 9 //地胡
 
-	// 特殊番型
-	JiaWuXing:        2,  // 夹心五
-	JueZhang:         2,  // 胡绝张
-	KaBianZhang:      2,  // 卡边张
-	YiTiaoLong:       4,  // 一条龙
-	MenQinZhongZhang: 4,  // 门清中张
-	YaoJiuJiangDui:   8,  // 幺九将对
-	JiangDui258:      8,  // 将对258
-	TianHu:           16, // 天胡
-	DiHu:             16, // 地胡
+	// huType
+	PingHu        = 20 //平胡
+	PonPonHu      = 21 //碰碰胡
+	QiDui         = 22 //七对
+	QinYiSe       = 23 //清一色
+	LongQiDui     = 24 //龙七对
+	JinGouDiao    = 25 //金勾勾
+	QinPon        = 26 //清碰
+	QinQiDui      = 27 //清七对
+	QinJinGouDiao = 28 //清金勾
+	QinLongQiDui  = 29 //清龙七对
+
+	// specialHuType
+	JiaXinWu    = 100 //夹心五
+	JueZhang    = 101 //绝张
+	KaBianZhang = 102 //卡边张
+	YiTiaoLong  = 103 //一条龙
+	MenQing     = 104 //门清
+	ZhongZhang  = 105 //中张
+	JiangDui19  = 106 //幺九将对
+	JiangDui258 = 107 //258将对
+)
+
+var addMulti = map[int32]int64{
+	JiaXinWu:    2,
+	JueZhang:    2,
+	KaBianZhang: 2,
+	YiTiaoLong:  2,
+	MenQing:     2,
+	ZhongZhang:  2,
+	JiangDui19:  8,
+	JiangDui258: 8,
+}
+
+var multis = map[int32]int64{
+	// 胡牌模式
+	KonKai:   2,
+	KonPao:   2,
+	HaiDi:    2,
+	HaiDiPao: 2,
+	TianHu:   16,
+	DiHu:     16,
+	// 基础番型
+	PonPonHu:      2,
+	QiDui:         4,
+	QinYiSe:       4,
+	LongQiDui:     8,
+	JinGouDiao:    8,
+	QinPon:        8,
+	QinQiDui:      16,
+	QinJinGouDiao: 16,
+	QinLongQiDui:  32,
 }
 
 // 定义番型检查配置
 type huTypeConfig struct {
-	checkFunc func(*mahjong.HuData) bool
+	checkFunc func(*HuData) bool
 	huType    int32
 	exclude   []int32
 }
@@ -62,35 +82,44 @@ type huTypeConfig struct {
 // 全局番型配置
 var huConfigs = []huTypeConfig{
 	// 基础番型
-	{isPonPonHu, PonPonHu, []int32{PingHu}},
-	{isQiDui, QiDui, []int32{PingHu}},
-	{isLongQiDui, LongQiDui, []int32{PingHu}},
+	{isLongQiDui, LongQiDui, []int32{QiDui}},
 	{isQinYiSe, QinYiSe, []int32{PingHu}},
-	{isJinGouDiao, JinGouDiao, []int32{PingHu}},
+	{isJinGouDiao, JinGouDiao, []int32{PonPonHu}},
 
 	// 组合番型
 	{isQinPon, QinPon, []int32{QinYiSe, PonPonHu}},
 	{isQinQiDui, QinQiDui, []int32{QinYiSe, QiDui}},
-	{isQingLongQiDui, QingLongQiDui, []int32{QinYiSe, LongQiDui}},
+	{isQingLongQiDui, QinLongQiDui, []int32{QinYiSe, LongQiDui}},
 	{isQinJinGouDiao, QinJinGouDiao, []int32{QinYiSe, JinGouDiao}},
 
 	// 其他番型
-	{isJiaWuXing, JiaWuXing, []int32{KaBianZhang}}, // 夹心五与卡边张互斥
+	{isJiaWuXing, JiaXinWu, []int32{KaBianZhang}}, // 夹心五与卡边张互斥
 	{isYiTiaoLong, YiTiaoLong, nil},
-	{isMenQinZhongZhang, MenQinZhongZhang, nil},
-	{isYaoJiuJiangDui, YaoJiuJiangDui, []int32{PonPonHu}}, // 幺九将对与碰碰胡互斥
-	{isTianHu, TianHu, []int32{PingHu, PonPonHu, QiDui, QinYiSe, LongQiDui, JinGouDiao, YaoJiuJiangDui, JiangDui258, QinPon, QinQiDui, QinJinGouDiao, QingLongQiDui}}, // 天胡不与其他番型叠加
-	{isDiHu, DiHu, []int32{PingHu, PonPonHu, QiDui, QinYiSe, LongQiDui, JinGouDiao, YaoJiuJiangDui, JiangDui258, QinPon, QinQiDui, QinJinGouDiao, QingLongQiDui}},     // 地胡不与其他番型叠加
+	{isMenQing, MenQing, nil},
+	{isZhongZhang, ZhongZhang, nil},
+	{isJiangDui19, JiangDui19, []int32{PonPonHu}}, // 幺九将对与碰碰胡互斥
 	{isJueZhang, JueZhang, nil},
-	{isKaBianZhang, KaBianZhang, []int32{JiaWuXing}}, // 卡边张与夹心五互斥
-	{isJiangDui258, JiangDui258, nil},                // 将对258可与七对叠加
+	{isKaBianZhang, KaBianZhang, nil}, // 卡边张与夹心五互斥
+	{isJiangDui258, JiangDui258, nil}, // 将对258可与七对叠加
 }
 
-func totalMuti(huTypes []int32) int64 {
+func totalMuti(huTypes []int32, conf *mahjong.Rule) int64 {
 	totalMuti := int64(1)
-	for _, huType := range huTypes {
-		if multiple, ok := multiples[huType]; ok {
-			totalMuti *= multiple
+	for k, v := range multis {
+		if slices.Contains(huTypes, k) {
+			totalMuti *= v
+		}
+	}
+	if slices.Contains(huTypes, ZiMo) {
+		if conf.GetValue(RuleZiMoJiaDi) == 1 {
+			totalMuti += 1
+		} else {
+			totalMuti *= 2
+		}
+	}
+	for k, v := range addMulti {
+		if slices.Contains(huTypes, k) {
+			totalMuti += v
 		}
 	}
 	return totalMuti
@@ -108,78 +137,43 @@ func newHuData(data *mahjong.HuData) *HuData {
 	}
 }
 
-func (h *HuData) checkAndAppend(types []int32, checkFunc func(*mahjong.HuData) bool, huType int32, excludeTypes ...int32) []int32 {
-	if checkFunc(h.HuData) {
-		for _, excludeType := range excludeTypes {
-			for i, t := range types {
-				if t == excludeType {
-					types = append(types[:i], types[i+1:]...)
-					break
-				}
-			}
-		}
-		h.huCache[huType] = true
-		return append(types, huType)
-	}
-	h.huCache[huType] = false
-	return types
-}
-
 func (h *HuData) getHuTypes() []int32 {
 	types := []int32{PingHu}
 	for _, config := range huConfigs {
-		if config.exclude != nil {
-			types = h.checkAndAppend(types, config.checkFunc, config.huType, config.exclude...)
-		} else {
-			types = h.checkAndAppend(types, config.checkFunc, config.huType)
-		}
+		h.check(types, config)
 	}
 	return types
 }
 
-func isPonPonHu(huData *mahjong.HuData) bool {
-	tiles := huData.Tiles
-	tileMap := make(map[mahjong.Tile]int)
-	for _, tile := range tiles {
-		tileMap[tile]++
+func (h *HuData) check(types []int32, cfg huTypeConfig) []int32 {
+	if slices.Contains(types, TianHu) || slices.Contains(types, DiHu) {
+		return types
 	}
 
-	pengCount := 0
-	jiangCount := 0
-	for _, count := range tileMap {
-		switch count {
-		case 3:
-			pengCount++
-		case 2:
-			jiangCount++
+	switch h.HuCoreType {
+	case mahjong.HU_7DUI:
+		types = append(types, QiDui)
+	case mahjong.HU_PON:
+		types = append(types, PonPonHu)
+	default:
+		types = append(types, PingHu)
+	}
+
+	if !cfg.checkFunc(h) {
+		h.huCache[cfg.huType] = false
+		return types
+	}
+	newTypes := make([]int32, 0, len(types))
+	for _, t := range types {
+		if !slices.Contains(cfg.exclude, t) {
+			newTypes = append(newTypes, t)
 		}
 	}
-
-	return pengCount == 4 && jiangCount == 1
+	h.huCache[cfg.huType] = true
+	return append(newTypes, cfg.huType)
 }
 
-func isQiDui(huData *mahjong.HuData) bool {
-	// 七对: 7对独立牌
-	tiles := huData.Tiles
-	if len(tiles) != 14 {
-		return false
-	}
-
-	tileMap := make(map[mahjong.Tile]int)
-	for _, tile := range tiles {
-		tileMap[tile]++
-	}
-
-	for _, count := range tileMap {
-		if count != 2 {
-			return false
-		}
-	}
-	return true
-}
-
-func isQinYiSe(huData *mahjong.HuData) bool {
-	// 清一色: 全为同一花色
+func isQinYiSe(huData *HuData) bool {
 	tiles := huData.Tiles
 	if len(tiles) == 0 {
 		return false
@@ -194,73 +188,44 @@ func isQinYiSe(huData *mahjong.HuData) bool {
 	return true
 }
 
-func isLongQiDui(huData *mahjong.HuData) bool {
-	// 龙七对: 七对子中包含至少1个四张相同的牌
-	tiles := huData.Tiles
-	if len(tiles) != 14 {
+func isLongQiDui(huData *HuData) bool {
+	if huData.HuCoreType != mahjong.HU_7DUI {
 		return false
 	}
 
 	tileMap := make(map[mahjong.Tile]int)
-	for _, tile := range tiles {
+	for _, tile := range huData.Tiles {
 		tileMap[tile]++
 	}
-
-	hasFour := false
 	for _, count := range tileMap {
 		if count == 4 {
-			hasFour = true
-		} else if count != 2 {
-			return false
+			return true
 		}
 	}
-	return hasFour
+	return false
 }
 
-func isJinGouDiao(huData *mahjong.HuData) bool {
-	// 金勾勾: 碰碰胡+单吊
-	if !isPonPonHu(huData) {
-		return false
-	}
-
-	// 检查是否单吊
-	tiles := huData.Tiles
-	tileMap := make(map[mahjong.Tile]int)
-	for _, tile := range tiles {
-		tileMap[tile]++
-	}
-
-	jiangCount := 0
-	for _, count := range tileMap {
-		if count == 2 {
-			jiangCount++
-		}
-	}
-	return jiangCount == 1
+func isJinGouDiao(huData *HuData) bool {
+	return len(huData.Tiles) == 2
 }
 
-func isQinPon(huData *mahjong.HuData) bool {
-	// 清碰: 清一色+碰碰胡
-	return isQinYiSe(huData) && isPonPonHu(huData)
+func isQinPon(huData *HuData) bool {
+	return isQinYiSe(huData) && huData.HuCoreType == mahjong.HU_PON
 }
 
-func isQinJinGouDiao(huData *mahjong.HuData) bool {
-	// 清金勾: 清一色+金勾勾
+func isQinJinGouDiao(huData *HuData) bool {
 	return isQinYiSe(huData) && isJinGouDiao(huData)
 }
 
-func isQinQiDui(huData *mahjong.HuData) bool {
-	// 清七对: 清一色+七对
-	return isQinYiSe(huData) && isQiDui(huData)
+func isQinQiDui(huData *HuData) bool {
+	return isQinYiSe(huData) && huData.HuCoreType == mahjong.HU_7DUI
 }
 
-func isQingLongQiDui(huData *mahjong.HuData) bool {
-	// 清龙七对: 清一色+龙七对
+func isQingLongQiDui(huData *HuData) bool {
 	return isQinYiSe(huData) && isLongQiDui(huData)
 }
 
-func isJiaWuXing(huData *mahjong.HuData) bool {
-	// 夹五星: 胡牌胡5筒、5万、5条的夹，比如46胡5
+func isJiaWuXing(huData *HuData) bool {
 	waitTile := huData.GetCurTile()
 	if !waitTile.IsSuit() || waitTile.Point() != 5 {
 		return false // 不是5筒/5万/5条
@@ -273,12 +238,10 @@ func isJiaWuXing(huData *mahjong.HuData) bool {
 	}
 
 	color := waitTile.Color()
-	// 检查是否有4和6
 	return tileMap[mahjong.MakeTile(color, 4)] > 0 && tileMap[mahjong.MakeTile(color, 6)] > 0
 }
 
-func isYiTiaoLong(huData *mahjong.HuData) bool {
-	// 一条龙: 手牌/胡牌能组成同一花色的123456789
+func isYiTiaoLong(huData *HuData) bool {
 	tiles := huData.Tiles
 	if len(tiles) < 9 {
 		return false
@@ -317,16 +280,15 @@ func isYiTiaoLong(huData *mahjong.HuData) bool {
 	return false
 }
 
-func isMenQinZhongZhang(huData *mahjong.HuData) bool {
-	// 门清中张: 门清+2-8的牌，即门清+断幺
-	// 检查门清(没有吃、碰、明杠)
-	// 由于 mahjong.HuData 没有直接提供 Groups() 方法
-	// 这里暂时返回 false，需要根据实际业务逻辑实现
+func isMenQing(huData *HuData) bool {
 	return false
 }
 
-func isYaoJiuJiangDui(huData *mahjong.HuData) bool {
-	// 幺九将对: 刻子、顺子全带幺九牌
+func isZhongZhang(huData *HuData) bool {
+	return isJiaWuXing(huData)
+}
+
+func isJiangDui19(huData *HuData) bool {
 	tiles := huData.Tiles
 	for _, tile := range tiles {
 		if tile.IsHonor() {
@@ -339,34 +301,11 @@ func isYaoJiuJiangDui(huData *mahjong.HuData) bool {
 	return true
 }
 
-func isTianHu(huData *mahjong.HuData) bool {
-	// 天胡: 庄家14张牌直接满足胡牌条件
-	// 需要根据 PlayData 判断是否是庄家
-	//return huData.PlayData.Play.IsZhuang() && huData.PlayData.Play.IsFirstRound()
+func isJueZhang(huData *HuData) bool {
 	return false
 }
 
-func isDiHu(huData *mahjong.HuData) bool {
-	// 地胡: 闲家在没有碰、杠的干扰下，自摸胡牌
-	// 需要根据 PlayData 判断是否是闲家、首轮和自摸
-	// return !huData.PlayData.Play.IsZhuang() &&
-	// 	huData.PlayData.Play.IsFirstRound() &&
-	// 	huData.PlayData.Play.IsZiMo() &&
-	// 	!huData.PlayData.Play.HasPeng() &&
-	// 	!huData.PlayData.Play.HasGang()
-	return false
-}
-
-func isJueZhang(huData *mahjong.HuData) bool {
-	// 绝张: 胡的牌只有1张的情况下(其他三张在牌池中或者被碰已现)
-	// waitTile := huData.GetCurTile()
-	// 需要从 PlayData 获取已出现的牌数
-	// 这里暂时返回 false，需要根据实际业务逻辑实现
-	return false
-}
-
-func isKaBianZhang(huData *mahjong.HuData) bool {
-	// 卡边张: 37边张胡，或者卡中间张，如13卡2胡
+func isKaBianZhang(huData *HuData) bool {
 	waitTile := huData.GetCurTile()
 	if !waitTile.IsSuit() {
 		return false
@@ -394,8 +333,7 @@ func isKaBianZhang(huData *mahjong.HuData) bool {
 	return false
 }
 
-func isJiangDui258(huData *mahjong.HuData) bool {
-	// 将对258: 刻子和将对全是由258组成
+func isJiangDui258(huData *HuData) bool {
 	tiles := huData.Tiles
 	for _, tile := range tiles {
 		if tile.IsHonor() {
