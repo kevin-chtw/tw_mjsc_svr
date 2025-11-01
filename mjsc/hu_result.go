@@ -33,23 +33,25 @@ const (
 	// specialHuType
 	JiaXinWu    = 100 //夹心五
 	JueZhang    = 101 //绝张
-	KaBianZhang = 102 //卡边张
+	KaZhang     = 102 //卡张
 	YiTiaoLong  = 103 //一条龙
 	MenQing     = 104 //门清
 	ZhongZhang  = 105 //中张
 	JiangDui19  = 106 //幺九将对
 	JiangDui258 = 107 //258将对
+	BianZhang   = 108 //卡张
 )
 
 var addMulti = map[int32]int64{
 	JiaXinWu:    2,
 	JueZhang:    2,
-	KaBianZhang: 2,
+	KaZhang:     2,
 	YiTiaoLong:  2,
 	MenQing:     2,
 	ZhongZhang:  2,
 	JiangDui19:  8,
 	JiangDui258: 8,
+	BianZhang:   2,
 }
 
 var multis = map[int32]int64{
@@ -93,14 +95,15 @@ var huConfigs = []huTypeConfig{
 	{isQinJinGouDiao, QinJinGouDiao, []int32{QinYiSe, JinGouDiao}},
 
 	// 其他番型
-	{isJiaWuXing, JiaXinWu, []int32{KaBianZhang}}, // 夹心五与卡边张互斥
+	{isJiaWuXing, JiaXinWu, nil},
 	{isYiTiaoLong, YiTiaoLong, nil},
 	{isMenQing, MenQing, nil},
 	{isZhongZhang, ZhongZhang, nil},
-	{isJiangDui19, JiangDui19, []int32{PonPonHu}}, // 幺九将对与碰碰胡互斥
+	{isJiangDui19, JiangDui19, nil},
 	{isJueZhang, JueZhang, nil},
-	{isKaBianZhang, KaBianZhang, nil}, // 卡边张与夹心五互斥
-	{isJiangDui258, JiangDui258, nil}, // 将对258可与七对叠加
+	{isKaZhang, KaZhang, nil},
+	{isJiangDui258, JiangDui258, nil},
+	{isBianZhang, KaZhang, nil},
 }
 
 func totalMuti(huTypes []int32, conf *mahjong.Rule) int64 {
@@ -305,7 +308,7 @@ func isJueZhang(huData *HuData) bool {
 	return false
 }
 
-func isKaBianZhang(huData *HuData) bool {
+func isKaZhang(huData *HuData) bool {
 	waitTile := huData.GetCurTile()
 	if !waitTile.IsSuit() {
 		return false
@@ -330,6 +333,10 @@ func isKaBianZhang(huData *HuData) bool {
 		return tileMap[mahjong.MakeTile(color, point-1)] > 0 &&
 			tileMap[mahjong.MakeTile(color, point+1)] > 0
 	}
+	return false
+}
+
+func isBianZhang(huData *HuData) bool {
 	return false
 }
 

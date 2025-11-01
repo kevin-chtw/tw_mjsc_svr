@@ -19,6 +19,7 @@ func NewPlay(game *Game) *Play {
 	p.RegisterWaitCheck(newCheckerPao(p), newCheckerZhiKon(p), newCheckerPon(p))
 	return p
 }
+
 func (p *Play) queRecommand(seat int32) mahjong.EColor {
 	tiles := p.GetPlayData(seat).GetHandTiles()
 	colors := make(map[mahjong.EColor]int32)
@@ -103,11 +104,15 @@ func (p *Play) selfHuTypes() []int32 {
 	return types
 }
 
-func (p *Play) paoHuTypes(_ int32) []int32 {
+func (p *Play) paoHuTypes(seat int32) []int32 {
 	types := make([]int32, 0)
 	types = append(types, PaoHu)
 	if p.IsAfterKon() {
-		types = append(types, KonPao)
+		if p.GetCurSeat() == seat {
+			types = append(types, QiangKonHu)
+		} else {
+			types = append(types, KonPao)
+		}
 	}
 	if p.dealer.GetRestCount() == 0 {
 		types = append(types, HaiDiPao)

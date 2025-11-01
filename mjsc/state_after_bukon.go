@@ -88,12 +88,25 @@ func (s *StateAfterBukon) tryHandleAction() {
 	}
 
 	if len(huSeats) > 0 {
-		s.game.SetNextState(NewStatePaohu, huSeats)
+		s.excuteHu(huSeats)
 	} else {
-		scores := s.game.scorelator.Check(s.game.play.GetCurSeat(), mahjong.SeatNull, -1, -1)
+		scores := s.game.scorelator.CalcKon(mahjong.ScoreReasonBuKon, s.game.play.GetCurSeat(), mahjong.SeatNull, -1, -1)
 		s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonBuKon, scores, s.game.play.GetCurTile(), mahjong.SeatNull, nil)
 		s.game.SetNextState(NewStateDraw)
 	}
+}
+
+func (s *StateAfterBukon) excuteHu(huSeats []int32) {
+	multiples := s.game.play.PaoHu(huSeats)
+	scores := s.game.scorelator.CalcMulti(mahjong.ScoreReasonHu, multiples)
+	s.game.sender.SendHuAck(huSeats, s.game.play.GetCurSeat())
+	s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonHu, scores, s.game.play.GetCurTile(), s.game.play.GetCurSeat(), huSeats)
+	for _, seat := range huSeats {
+		s.game.GetPlayer(seat).SetOut()
+	}
+	nextSeat := mahjong.GetNextSeat(huSeats[len(huSeats)-1], 1, s.game.GetPlayerCount())
+	s.game.play.DoSwitchSeat(nextSeat)
+	s.game.SetNextState(NewStateDraw)
 }
 
 func (s *StateAfterBukon) getReqOperate(seat int32) (int, bool) {

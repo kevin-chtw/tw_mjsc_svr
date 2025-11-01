@@ -70,14 +70,22 @@ func (s *StateDiscard) kon(tile mahjong.Tile) {
 		s.game.SetNextState(NewStateAfterBukon)
 	} else if s.game.play.TryKon(tile, mahjong.KonTypeAn) {
 		s.game.sender.SendKonAck(s.game.play.GetCurSeat(), tile, mahjong.KonTypeAn)
-		scores := s.game.scorelator.Check(s.game.play.GetCurSeat(), mahjong.SeatNull, -2, -2)
+		scores := s.game.scorelator.CalcKon(mahjong.ScoreReasonAnKon, s.game.play.GetCurSeat(), mahjong.SeatNull, -2, -2)
 		s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonAnKon, scores, s.game.play.GetCurTile(), mahjong.SeatNull, nil)
 		s.game.SetNextState(NewStateDraw)
 	}
 }
 
 func (s *StateDiscard) hu(tile mahjong.Tile) {
-	s.game.SetNextState(NewStateZimo)
+	huSeats := make([]int32, 0)
+	huSeats = append(huSeats, s.game.play.GetCurSeat())
+	multiples := s.game.play.Zimo()
+	s.game.sender.SendHuAck(huSeats, mahjong.SeatNull)
+	scores := s.game.scorelator.CalcMulti(mahjong.ScoreReasonHu, multiples)
+	s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonHu, scores, s.game.play.GetCurTile(), mahjong.SeatNull, huSeats)
+	s.game.GetPlayer(s.game.play.GetCurSeat()).SetOut()
+	s.game.play.DoSwitchSeat(mahjong.SeatNull)
+	s.game.SetNextState(NewStateDraw)
 }
 
 func (s *StateDiscard) OnTimeout() {
