@@ -2,6 +2,7 @@ package mjsc
 
 import (
 	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
+	"github.com/kevin-chtw/tw_proto/game/pbmj"
 )
 
 func init() {
@@ -55,10 +56,12 @@ func (s *service) GetFdRules() map[string]int32 {
 	return nil
 }
 
-func (s *service) GetHuTypes(data *mahjong.HuData) []int32 {
-	return newHuData(data).getHuTypes()
-}
+func (s *service) GetHuResult(data *mahjong.HuData) *pbmj.MJHuData {
+	result := data.InitHuResult()
+	h := newHuData(data)
+	result.Gen = h.calcGen()
+	result.HuTypes = append(result.HuTypes, h.getHuTypes()...)
 
-func (s *service) TotalMuti(types []int32, conf *mahjong.Rule) int64 {
-	return totalMuti(types, conf)
+	result.Multi = totalMuti(result, data.Play.GetRule())
+	return result
 }

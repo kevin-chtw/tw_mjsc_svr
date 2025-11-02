@@ -33,12 +33,11 @@ func (g *Game) OnStart() {
 }
 
 func (g *Game) OnReqMsg(player *game.Player, data []byte) error {
-	logger.Log.Info(string(data))
 	var msg pbsc.SCReq
 	if err := utils.Unmarshal(player.Ctx, data, &msg); err != nil {
 		return err
 	}
-
+	logger.Log.Infof("player %d recive msg %v", player.GetSeat(), &msg)
 	req, err := msg.Req.UnmarshalNew()
 	if err != nil {
 		return err

@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
+	"github.com/kevin-chtw/tw_proto/game/pbmj"
 )
 
 const (
@@ -106,14 +107,14 @@ var huConfigs = []huTypeConfig{
 	{isBianZhang, KaZhang, nil},
 }
 
-func totalMuti(huTypes []int32, conf *mahjong.Rule) int64 {
-	totalMuti := int64(1)
+func totalMuti(result *pbmj.MJHuData, conf *mahjong.Rule) int64 {
+	totalMuti := int64(1 << result.Gen)
 	for k, v := range multis {
-		if slices.Contains(huTypes, k) {
+		if slices.Contains(result.HuTypes, k) {
 			totalMuti *= v
 		}
 	}
-	if slices.Contains(huTypes, ZiMo) {
+	if slices.Contains(result.HuTypes, ZiMo) {
 		if conf.GetValue(RuleZiMoJiaDi) == 1 {
 			totalMuti += 1
 		} else {
@@ -121,7 +122,7 @@ func totalMuti(huTypes []int32, conf *mahjong.Rule) int64 {
 		}
 	}
 	for k, v := range addMulti {
-		if slices.Contains(huTypes, k) {
+		if slices.Contains(result.HuTypes, k) {
 			totalMuti += v
 		}
 	}
@@ -130,14 +131,37 @@ func totalMuti(huTypes []int32, conf *mahjong.Rule) int64 {
 
 type HuData struct {
 	*mahjong.HuData
-	huCache map[int32]bool // 番型计算结果缓存
 }
 
 func newHuData(data *mahjong.HuData) *HuData {
 	return &HuData{
-		HuData:  data,
-		huCache: make(map[int32]bool),
+		HuData: data,
 	}
+}
+func (h *HuData) calcGen() int32 {
+	// 获取玩家数据
+	playData := h.PlayData
+	genCount := int32(len(playData.GetKonGroups()))
+
+	// 2. 计算碰牌与手牌组成4张的牌数
+	ponGroups := playData.GetPonGroups()
+	handTiles := playData.GetHandTiles()
+
+	tileCount := make(map[mahjong.Tile]int32)
+	for _, tile := range handTiles {
+		tileCount[tile]++
+	}
+
+	for _, pon := range ponGroups {
+		tileCount[pon.Tile] += 3
+	}
+
+	for _, count := range tileCount {
+		if count == 4 {
+			genCount++
+		}
+	}
+	return genCount
 }
 
 func (h *HuData) getHuTypes() []int32 {
@@ -163,7 +187,6 @@ func (h *HuData) check(types []int32, cfg huTypeConfig) []int32 {
 	}
 
 	if !cfg.checkFunc(h) {
-		h.huCache[cfg.huType] = false
 		return types
 	}
 	newTypes := make([]int32, 0, len(types))
@@ -172,7 +195,6 @@ func (h *HuData) check(types []int32, cfg huTypeConfig) []int32 {
 			newTypes = append(newTypes, t)
 		}
 	}
-	h.huCache[cfg.huType] = true
 	return append(newTypes, cfg.huType)
 }
 
@@ -230,7 +252,7 @@ func isQingLongQiDui(huData *HuData) bool {
 
 func isJiaWuXing(huData *HuData) bool {
 	waitTile := huData.GetCurTile()
-	if !waitTile.IsSuit() || waitTile.Point() != 5 {
+	if !waitTile.IsSuit() || waitTile.Point() != 4 {
 		return false // 不是5筒/5万/5条
 	}
 
@@ -241,7 +263,7 @@ func isJiaWuXing(huData *HuData) bool {
 	}
 
 	color := waitTile.Color()
-	return tileMap[mahjong.MakeTile(color, 4)] > 0 && tileMap[mahjong.MakeTile(color, 6)] > 0
+	return tileMap[mahjong.MakeTile(color, 3)] > 0 && tileMap[mahjong.MakeTile(color, 5)] > 0
 }
 
 func isYiTiaoLong(huData *HuData) bool {
@@ -270,7 +292,7 @@ func isYiTiaoLong(huData *HuData) bool {
 		}
 
 		hasAll := true
-		for i := 1; i <= 9; i++ {
+		for i := range 9 {
 			if !points[i] {
 				hasAll = false
 				break
@@ -284,11 +306,55 @@ func isYiTiaoLong(huData *HuData) bool {
 }
 
 func isMenQing(huData *HuData) bool {
-	return false
+	playData := huData.PlayData
+
+	if len(playData.GetPonGroups()) > 0 {
+		return false
+	}
+
+	konGroups := playData.GetKonGroups()
+	for _, kon := range konGroups {
+		if kon.Type != mahjong.KonTypeAn { // 非暗杠（即明杠）
+			return false
+		}
+	}
+	return true
 }
 
 func isZhongZhang(huData *HuData) bool {
-	return isJiaWuXing(huData)
+	playData := huData.PlayData
+
+	// 1. 检查手牌
+	for _, tile := range playData.GetHandTiles() {
+		if !isZhongTile(tile) {
+			return false
+		}
+	}
+
+	// 2. 检查碰牌
+	for _, pon := range playData.GetPonGroups() {
+		if !isZhongTile(pon.Tile) {
+			return false
+		}
+	}
+
+	// 3. 检查杠牌
+	for _, kon := range playData.GetKonGroups() {
+		if !isZhongTile(kon.Tile) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// 辅助函数：判断单张牌是否是中张
+func isZhongTile(tile mahjong.Tile) bool {
+	if tile.IsSuit() {
+		point := tile.Point()
+		return point >= 1 && point <= 7 // 在0-8范围内，1-7算中张
+	}
+	return false // 字牌不算中张
 }
 
 func isJiangDui19(huData *HuData) bool {
@@ -305,39 +371,87 @@ func isJiangDui19(huData *HuData) bool {
 }
 
 func isJueZhang(huData *HuData) bool {
-	return false
+	tile := huData.GetCurTile()
+	totalCount := 0
+	for i := range huData.Play.GetPlayerCount() {
+		playData := huData.Play.GetPlayData(i)
+		for _, pon := range playData.GetPonGroups() {
+			if pon.Tile == tile {
+				totalCount += 3
+			}
+		}
+		for _, t := range playData.GetOutTiles() {
+			if t == tile {
+				totalCount += 1
+			}
+		}
+	}
+	return totalCount >= 3
 }
 
 func isKaZhang(huData *HuData) bool {
 	waitTile := huData.GetCurTile()
+
+	// 1. 检查是否是数字牌
+	if !waitTile.IsSuit() {
+		return false
+	}
+
+	color := waitTile.Color()
+	point := waitTile.Point()
+
+	// 2. 检查卡张情况（需要相邻的牌）
+	if point > 0 && point < 8 { // 在0-8范围内，1-7需要检查相邻牌
+		// 统计手牌中各牌的数量
+		tileMap := make(map[mahjong.Tile]int)
+		for _, tile := range huData.Tiles {
+			tileMap[tile]++
+		}
+
+		// 检查是否有相邻的牌
+		hasPrev := tileMap[mahjong.MakeTile(color, point-1)] > 0
+		hasNext := tileMap[mahjong.MakeTile(color, point+1)] > 0
+
+		// 卡张定义：同时有前一张和后一张
+		return hasPrev && hasNext
+	}
+
+	return false
+}
+
+func isBianZhang(huData *HuData) bool {
+	waitTile := huData.GetCurTile()
+
+	// 1. 检查是否是数字牌
 	if !waitTile.IsSuit() {
 		return false
 	}
 
 	point := waitTile.Point()
-	if point == 3 || point == 7 {
-		// 边张情况
-		return true
+
+	// 2. 检查是否是边张（0或8）
+	if point != 0 && point != 8 {
+		return false
 	}
 
-	// 检查卡张情况
-	tiles := huData.Tiles
+	// 3. 统计手牌中各牌的数量
 	tileMap := make(map[mahjong.Tile]int)
-	for _, tile := range tiles {
+	for _, tile := range huData.Tiles {
 		tileMap[tile]++
 	}
 
 	color := waitTile.Color()
-	if point > 1 && point < 9 {
-		// 检查是否有相邻的牌
-		return tileMap[mahjong.MakeTile(color, point-1)] > 0 &&
-			tileMap[mahjong.MakeTile(color, point+1)] > 0
-	}
-	return false
-}
 
-func isBianZhang(huData *HuData) bool {
-	return false
+	// 4. 边张需要相邻的两张牌来组成顺子
+	if point == 0 {
+		// 胡0需要手牌有1和2来组成0-1-2顺子
+		return tileMap[mahjong.MakeTile(color, 1)] > 0 &&
+			tileMap[mahjong.MakeTile(color, 2)] > 0
+	} else { // point == 8
+		// 胡8需要手牌有6和7来组成6-7-8顺子
+		return tileMap[mahjong.MakeTile(color, 6)] > 0 &&
+			tileMap[mahjong.MakeTile(color, 7)] > 0
+	}
 }
 
 func isJiangDui258(huData *HuData) bool {
