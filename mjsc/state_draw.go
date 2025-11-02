@@ -82,10 +82,9 @@ func (s *StateDraw) chaJiao(seat int32) {
 				maxMulti = v
 			}
 		}
-
 		multis[i] = maxMulti
 		multis[seat] -= maxMulti
 	}
-	final := s.game.scorelator.CalcMulti(i, mahjong.ScoreReasonChaJiao, multis)
+	final := s.game.scorelator.CalcMulti(mahjong.SeatNull, mahjong.ScoreReasonChaJiao, multis)
 	s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonChaJiao, final, mahjong.TileNull, mahjong.SeatNull, nil)
 }
