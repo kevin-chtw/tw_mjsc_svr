@@ -161,12 +161,12 @@ func (s *StateWait) excuteHu(huSeats []int32) {
 		for i := 1; i < len(huSeats); i++ {
 			newScores[huSeats[i]] += avgScore
 		}
-		final := s.game.scorelator.CalcScores(mahjong.ScoreReasonZhuanYu, newScores)
+		final := s.game.scorelator.CalcScores(mahjong.SeatNull, mahjong.ScoreReasonZhuanYu, newScores)
 		s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonZhuanYu, final, s.game.play.GetCurTile(), s.game.play.GetCurSeat(), huSeats)
 	}
 
 	multiples := s.game.play.PaoHu(huSeats)
-	scores := s.game.scorelator.CalcMulti(mahjong.ScoreReasonHu, multiples)
+	scores := s.game.scorelator.CalcMulti(mahjong.SeatNull, mahjong.ScoreReasonHu, multiples)
 	s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonHu, scores, s.game.play.GetCurTile(), s.game.play.GetCurSeat(), huSeats)
 	for _, seat := range huSeats {
 		s.game.GetPlayer(seat).SetOut()

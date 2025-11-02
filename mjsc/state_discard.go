@@ -81,7 +81,7 @@ func (s *StateDiscard) hu(tile mahjong.Tile) {
 	huSeats = append(huSeats, s.game.play.GetCurSeat())
 	multiples := s.game.play.Zimo()
 	s.game.sender.SendHuAck(huSeats, mahjong.SeatNull)
-	scores := s.game.scorelator.CalcMulti(mahjong.ScoreReasonHu, multiples)
+	scores := s.game.scorelator.CalcMulti(s.game.play.GetCurSeat(), mahjong.ScoreReasonHu, multiples)
 	s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonHu, scores, s.game.play.GetCurTile(), mahjong.SeatNull, huSeats)
 	s.game.GetPlayer(s.game.play.GetCurSeat()).SetOut()
 	s.game.play.DoSwitchSeat(mahjong.SeatNull)

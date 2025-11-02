@@ -98,7 +98,7 @@ func (s *StateAfterBukon) tryHandleAction() {
 
 func (s *StateAfterBukon) excuteHu(huSeats []int32) {
 	multiples := s.game.play.PaoHu(huSeats)
-	scores := s.game.scorelator.CalcMulti(mahjong.ScoreReasonHu, multiples)
+	scores := s.game.scorelator.CalcMulti(mahjong.SeatNull, mahjong.ScoreReasonHu, multiples)
 	s.game.sender.SendHuAck(huSeats, s.game.play.GetCurSeat())
 	s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonHu, scores, s.game.play.GetCurTile(), s.game.play.GetCurSeat(), huSeats)
 	for _, seat := range huSeats {
