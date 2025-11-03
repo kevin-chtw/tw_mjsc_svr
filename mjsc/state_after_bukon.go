@@ -90,7 +90,7 @@ func (s *StateAfterBukon) tryHandleAction() {
 	if len(huSeats) > 0 {
 		s.excuteHu(huSeats)
 	} else {
-		scores := s.game.scorelator.CalcKon(mahjong.ScoreReasonBuKon, s.game.play.GetCurSeat(), mahjong.SeatNull, -1, -1)
+		scores := s.game.scorelator.CalcKon(mahjong.ScoreReasonBuKon, s.game.play.GetCurSeat(), mahjong.SeatNull, 1, 1)
 		s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonBuKon, scores, s.game.play.GetCurTile(), mahjong.SeatNull, nil)
 		s.game.SetNextState(NewStateDraw)
 	}

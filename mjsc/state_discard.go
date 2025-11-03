@@ -70,7 +70,7 @@ func (s *StateDiscard) kon(tile mahjong.Tile) {
 		s.game.SetNextState(NewStateAfterBukon)
 	} else if s.game.play.TryKon(tile, mahjong.KonTypeAn) {
 		s.game.sender.SendKonAck(s.game.play.GetCurSeat(), tile, mahjong.KonTypeAn)
-		scores := s.game.scorelator.CalcKon(mahjong.ScoreReasonAnKon, s.game.play.GetCurSeat(), mahjong.SeatNull, -2, -2)
+		scores := s.game.scorelator.CalcKon(mahjong.ScoreReasonAnKon, s.game.play.GetCurSeat(), mahjong.SeatNull, 2, 2)
 		s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonAnKon, scores, s.game.play.GetCurTile(), mahjong.SeatNull, nil)
 		s.game.SetNextState(NewStateDraw)
 	}

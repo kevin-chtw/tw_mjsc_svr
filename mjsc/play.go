@@ -53,19 +53,13 @@ func (p *Play) discard(tile mahjong.Tile) bool {
 func (p *Play) getQueTile(seat int32) mahjong.Tile {
 	color := p.queColors[seat]
 	tiles := p.GetPlayData(seat).GetHandTiles()
-	for _, t := range tiles {
-		if t.Color() == color {
-			return t
-		}
-	}
-	return mahjong.TileNull
+	return mahjong.GetColorTile(tiles, color)
 }
 
 func (p *Play) CheckHu(data *mahjong.HuData) mahjong.HuCoreType {
-	if p.getQueTile(data.GetSeat()) != mahjong.TileNull {
+	if mahjong.GetColorTile(data.Tiles, p.queColors[data.GetSeat()]) != mahjong.TileNull {
 		return mahjong.HU_NON
 	}
-
 	tiles, laiCount := data.CountLaiZi()
 	htype := mahjong.Check7dui(tiles, laiCount)
 	if htype != mahjong.HU_NON {
