@@ -11,6 +11,7 @@ import (
 
 type StateAfterBukon struct {
 	*State
+	tile               mahjong.Tile
 	operatesForSeats   []*mahjong.Operates // 每个座位可执行的操作
 	reqOperateForSeats map[int32]int       // 每个座位已请求的操作
 }
@@ -18,6 +19,7 @@ type StateAfterBukon struct {
 func NewStateAfterBukon(game mahjong.IGame, args ...any) mahjong.IState {
 	s := &StateAfterBukon{
 		State: NewState(game),
+		tile:  args[0].(mahjong.Tile),
 	}
 	s.operatesForSeats = make([]*mahjong.Operates, s.game.GetPlayerCount())
 	s.reqOperateForSeats = make(map[int32]int)
@@ -90,8 +92,10 @@ func (s *StateAfterBukon) tryHandleAction() {
 	if len(huSeats) > 0 {
 		s.excuteHu(huSeats)
 	} else {
-		scores := s.game.scorelator.CalcKon(mahjong.ScoreReasonBuKon, s.game.play.GetCurSeat(), mahjong.SeatNull, 1, 1)
-		s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonBuKon, scores, s.game.play.GetCurTile(), mahjong.SeatNull, nil)
+		if s.tile != s.game.play.GetCurTile() {
+			scores := s.game.scorelator.CalcKon(mahjong.ScoreReasonBuKon, s.game.play.GetCurSeat(), mahjong.SeatNull, 1, 1)
+			s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonBuKon, scores, s.game.play.GetCurTile(), mahjong.SeatNull, nil)
+		}
 		s.game.SetNextState(NewStateDraw)
 	}
 }

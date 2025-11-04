@@ -28,7 +28,7 @@ func newCheckerKon(play *Play) mahjong.CheckerSelf {
 	return &checkerKon{play: play}
 }
 func (c *checkerKon) Check(opt *mahjong.Operates) {
-	if opt.IsMustHu {
+	if opt.IsMustHu || c.play.IsAfterPon() {
 		return
 	}
 	seat := c.play.GetCurSeat()
