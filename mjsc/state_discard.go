@@ -66,8 +66,12 @@ func (s *StateDiscard) discard(tile mahjong.Tile) {
 
 func (s *StateDiscard) kon(tile mahjong.Tile) {
 	if s.game.play.TryKon(tile, mahjong.KonTypeBu) {
-		s.game.sender.SendKonAck(s.game.play.GetCurSeat(), tile, mahjong.KonTypeBu)
-		s.game.SetNextState(NewStateAfterBukon, tile)
+		konType := mahjong.KonTypeBu
+		if tile != s.game.play.GetCurTile() {
+			konType = mahjong.KonTypeBa
+		}
+		s.game.sender.SendKonAck(s.game.play.GetCurSeat(), tile, konType)
+		s.game.SetNextState(NewStateAfterBukon, konType)
 	} else if s.game.play.TryKon(tile, mahjong.KonTypeAn) {
 		s.game.sender.SendKonAck(s.game.play.GetCurSeat(), tile, mahjong.KonTypeAn)
 		scores := s.game.scorelator.CalcKon(mahjong.ScoreReasonAnKon, s.game.play.GetCurSeat(), mahjong.SeatNull, 2, 2)

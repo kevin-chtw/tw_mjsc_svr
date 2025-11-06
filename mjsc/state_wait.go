@@ -141,7 +141,7 @@ func (s *StateWait) excuteOperate(seat int32, operate int) {
 	}
 	if operate == mahjong.OperatePon {
 		s.game.play.Pon(seat)
-		s.game.sender.SendPonAck(seat, s.game.play.GetCurTile())
+		s.game.sender.SendPonAck(seat, s.game.play.GetCurTile(), false)
 		s.toDiscardState(seat)
 		return
 	}
