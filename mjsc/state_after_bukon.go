@@ -92,7 +92,7 @@ func (s *StateAfterBukon) tryHandleAction() {
 	if len(huSeats) > 0 {
 		s.excuteHu(huSeats)
 	} else {
-		if s.konType == mahjong.KonTypeBa {
+		if s.konType == mahjong.KonTypeBu {
 			scores := s.game.scorelator.CalcKon(mahjong.ScoreReasonBuKon, s.game.play.GetCurSeat(), mahjong.SeatNull, 1, 1)
 			s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonBuKon, scores, mahjong.TileNull, mahjong.SeatNull, nil)
 		}

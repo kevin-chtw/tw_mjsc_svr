@@ -60,7 +60,7 @@ func (p *Play) CheckHu(data *mahjong.HuData) mahjong.HuCoreType {
 	if mahjong.GetColorTile(data.Tiles, p.queColors[data.GetSeat()]) != mahjong.TileNull {
 		return mahjong.HU_NON
 	}
-	tiles, laiCount := data.CountLaiZi()
+	tiles, laiCount := data.CountLaiZi(data.Tiles)
 	htype := mahjong.Check7dui(tiles, laiCount)
 	if htype != mahjong.HU_NON {
 		return htype

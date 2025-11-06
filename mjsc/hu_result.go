@@ -102,7 +102,7 @@ var huConfigs = []huTypeConfig{
 	{isJiangDui19, JiangDui19, nil},
 	{isJueZhang, JueZhang, nil},
 	{isJiangDui258, JiangDui258, nil},
-	{isBianZhang, KaZhang, nil},
+	{isBianZhang, BianZhang, nil},
 	{isKaZhang, KaZhang, nil},
 	{isJiaWuXing, JiaXinWu, []int32{KaZhang}},
 }
@@ -195,25 +195,6 @@ func (h *HuData) check(types []int32, cfg huTypeConfig) []int32 {
 		}
 	}
 	return append(newTypes, cfg.huType)
-}
-
-func (h *HuData) checkHu(tile mahjong.Tile, p1, p2 int) bool {
-	requiredTiles := [2]mahjong.Tile{
-		mahjong.MakeTile(tile.Color(), p1),
-		mahjong.MakeTile(tile.Color(), p2),
-	}
-	for _, reqTile := range requiredTiles {
-		if !slices.Contains(h.Tiles, reqTile) {
-			return false
-		}
-	}
-	tiles := make([]mahjong.Tile, 0, len(h.Tiles)-3)
-	for _, t := range h.Tiles {
-		if t != tile && t != requiredTiles[0] && t != requiredTiles[1] {
-			tiles = append(tiles, t)
-		}
-	}
-	return mahjong.DefaultHuCore.CheckBasicHu(tiles, 0) != mahjong.HU_NON
 }
 
 func isQinYiSe(huData *HuData) bool {
@@ -427,7 +408,7 @@ func isKaZhang(huData *HuData) bool {
 		return false
 	}
 
-	return huData.checkHu(waitTile, point-1, point+1)
+	return huData.CheckShun(waitTile, point-1, point+1)
 }
 
 func isBianZhang(huData *HuData) bool {
@@ -436,9 +417,9 @@ func isBianZhang(huData *HuData) bool {
 
 	switch point {
 	case 2:
-		return huData.checkHu(waitTile, point-1, point-2) && !huData.checkHu(waitTile, point+1, point+2)
+		return huData.CheckShun(waitTile, point-1, point-2) && !huData.CheckShun(waitTile, point+1, point+2)
 	case 6:
-		return !huData.checkHu(waitTile, point-1, point-2) && huData.checkHu(waitTile, point+1, point+2)
+		return !huData.CheckShun(waitTile, point-1, point-2) && huData.CheckShun(waitTile, point+1, point+2)
 	default:
 		return false
 	}
