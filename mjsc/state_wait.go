@@ -150,20 +150,7 @@ func (s *StateWait) excuteOperate(seat int32, operate int) {
 
 func (s *StateWait) excuteHu(huSeats []int32) {
 	s.game.sender.SendHuAck(huSeats, s.game.play.GetCurSeat())
-	if s.game.play.IsAfterKon() {
-		scores := s.game.scorelator.RemoveLastScore()
-		winScore := scores.Scores[s.game.play.GetCurSeat()]
-		avgScore := winScore / int64(len(huSeats))
-		remainder := winScore % int64(len(huSeats))
-		newScores := make([]int64, len(scores.Scores))
-		newScores[s.game.play.GetCurSeat()] = -winScore
-		newScores[huSeats[0]] = avgScore + remainder
-		for i := 1; i < len(huSeats); i++ {
-			newScores[huSeats[i]] += avgScore
-		}
-		final := s.game.scorelator.CalcScores(mahjong.SeatNull, mahjong.ScoreReasonZhuanYu, newScores)
-		s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonZhuanYu, final, s.game.play.GetCurTile(), s.game.play.GetCurSeat(), huSeats)
-	}
+	s.zhuanYu(huSeats)
 
 	multiples := s.game.play.PaoHu(huSeats)
 	scores := s.game.scorelator.CalcMulti(mahjong.SeatNull, mahjong.ScoreReasonHu, multiples)
@@ -174,6 +161,24 @@ func (s *StateWait) excuteHu(huSeats []int32) {
 	nextSeat := mahjong.GetNextSeat(huSeats[len(huSeats)-1], 1, s.game.GetPlayerCount())
 	s.game.play.DoSwitchSeat(nextSeat)
 	s.game.SetNextState(NewStateDraw)
+}
+
+func (s *StateWait) zhuanYu(huSeats []int32) {
+	if s.game.GetRule().GetValue(RuleZhuanYu) == 0 || !s.game.play.IsAfterKon() {
+		return
+	}
+	scores := s.game.scorelator.RemoveLastScore()
+	winScore := scores.Scores[s.game.play.GetCurSeat()]
+	avgScore := winScore / int64(len(huSeats))
+	remainder := winScore % int64(len(huSeats))
+	newScores := make([]int64, len(scores.Scores))
+	newScores[s.game.play.GetCurSeat()] = -winScore
+	newScores[huSeats[0]] = avgScore + remainder
+	for i := 1; i < len(huSeats); i++ {
+		newScores[huSeats[i]] += avgScore
+	}
+	final := s.game.scorelator.CalcScores(mahjong.SeatNull, mahjong.ScoreReasonZhuanYu, newScores)
+	s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonZhuanYu, final, s.game.play.GetCurTile(), s.game.play.GetCurSeat(), huSeats)
 }
 
 func (s *StateWait) toDrawState(seat int32) {

@@ -21,7 +21,7 @@ func NewService() mahjong.IService {
 	s := &service{
 		tiles:        make(map[mahjong.Tile]int),
 		tilesFeng:    make(map[mahjong.Tile]int),
-		defaultRules: [RuleEnd]int{10, 8, 1, 10, 36, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		defaultRules: [RuleEnd]int{10, 8, 1, 10, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 		huCore:       mahjong.NewHuCore(14),
 		fdRules:      make(map[string]int32),
 	}

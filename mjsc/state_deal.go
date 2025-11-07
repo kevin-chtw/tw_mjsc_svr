@@ -18,7 +18,7 @@ func (s *StateDeal) OnEnter() {
 	s.game.play.Deal()
 
 	s.game.sender.SendOpenDoorAck()
-	if s.game.GetRule().GetValue(RuleDiscardTime) != 0 {
+	if s.game.GetRule().GetValue(RuleSwapTile) != 0 {
 		s.WaitAni(func() { s.game.SetNextState(NewStateSwapTiles) })
 	} else {
 		s.WaitAni(func() { s.game.SetNextState(NewStateDingque) })

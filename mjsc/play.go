@@ -14,7 +14,9 @@ func NewPlay(game *Game) *Play {
 		queColors: make(map[int32]mahjong.EColor),
 	}
 	p.Play = mahjong.NewPlay(p, game.Game, p.dealer)
-	p.PlayConf = &mahjong.PlayConf{}
+	p.PlayConf = &mahjong.PlayConf{
+		MaxMultipleLimit: int64(game.GetRule().GetValue(RuleMaxMulti)),
+	}
 	p.RegisterSelfCheck(newCheckerHu(p), newCheckerKon(p))
 	p.RegisterWaitCheck(newCheckerPao(p), newCheckerZhiKon(p), newCheckerPon(p))
 	return p
@@ -79,7 +81,7 @@ func (p *Play) GetExtraHuTypes(playData *mahjong.PlayData, self bool) []int32 {
 func (p *Play) selfHuTypes() []int32 {
 	types := make([]int32, 0)
 	seat := p.GetCurSeat()
-	if !p.HasOperate(seat) {
+	if p.GetRule().GetValue(RuleTianDiHu) != 0 && !p.HasOperate(seat) {
 		if seat == p.GetBanker() {
 			types = append(types, TianHu)
 		} else {
@@ -92,7 +94,7 @@ func (p *Play) selfHuTypes() []int32 {
 	if p.IsAfterKon() {
 		types = append(types, KonKai)
 	}
-	if p.dealer.GetRestCount() == 0 {
+	if p.GetRule().GetValue(RuleHaiDi) != 0 && p.dealer.GetRestCount() == 0 {
 		types = append(types, HaiDi)
 	}
 	return types
@@ -108,7 +110,7 @@ func (p *Play) paoHuTypes(seat int32) []int32 {
 			types = append(types, KonPao)
 		}
 	}
-	if p.dealer.GetRestCount() == 0 {
+	if p.GetRule().GetValue(RuleHaiDi) != 0 && p.dealer.GetRestCount() == 0 {
 		types = append(types, HaiDiPao)
 	}
 	return types

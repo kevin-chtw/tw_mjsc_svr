@@ -85,26 +85,26 @@ type huTypeConfig struct {
 // 全局番型配置
 var huConfigs = []huTypeConfig{
 	// 基础番型
-	{isLongQiDui, LongQiDui, []int32{QiDui}},
-	{isQinYiSe, QinYiSe, []int32{PingHu}},
-	{isJinGouDiao, JinGouDiao, []int32{PonPonHu}},
+	{(*HuData).isLongQiDui, LongQiDui, []int32{QiDui}},
+	{(*HuData).isQinYiSe, QinYiSe, []int32{PingHu}},
+	{(*HuData).isJinGouDiao, JinGouDiao, []int32{PonPonHu}},
 
 	// 组合番型
-	{isQinPon, QinPon, []int32{QinYiSe, PonPonHu}},
-	{isQinQiDui, QinQiDui, []int32{QinYiSe, QiDui}},
-	{isQingLongQiDui, QinLongQiDui, []int32{QinYiSe, LongQiDui}},
-	{isQinJinGouDiao, QinJinGouDiao, []int32{QinYiSe, JinGouDiao}},
+	{(*HuData).isQinPon, QinPon, []int32{QinYiSe, PonPonHu}},
+	{(*HuData).isQinQiDui, QinQiDui, []int32{QinYiSe, QiDui}},
+	{(*HuData).isQingLongQiDui, QinLongQiDui, []int32{QinYiSe, LongQiDui}},
+	{(*HuData).isQinJinGouDiao, QinJinGouDiao, []int32{QinYiSe, JinGouDiao}},
 
 	// 其他番型
-	{isYiTiaoLong, YiTiaoLong, nil},
-	{isMenQing, MenQing, nil},
-	{isZhongZhang, ZhongZhang, nil},
-	{isJiangDui19, JiangDui19, nil},
-	{isJueZhang, JueZhang, nil},
-	{isJiangDui258, JiangDui258, nil},
-	{isBianZhang, BianZhang, nil},
-	{isKaZhang, KaZhang, nil},
-	{isJiaWuXing, JiaXinWu, []int32{KaZhang}},
+	{(*HuData).isYiTiaoLong, YiTiaoLong, nil},
+	{(*HuData).isMenQing, MenQing, nil},
+	{(*HuData).isZhongZhang, ZhongZhang, nil},
+	{(*HuData).isJiangDui19, JiangDui19, nil},
+	{(*HuData).isJueZhang, JueZhang, nil},
+	{(*HuData).isJiangDui258, JiangDui258, nil},
+	{(*HuData).isBianZhang, BianZhang, nil},
+	{(*HuData).isKaZhang, KaZhang, nil},
+	{(*HuData).isJiaWuXing, JiaXinWu, []int32{KaZhang}},
 }
 
 func totalMuti(result *pbmj.MJHuData, conf *mahjong.Rule) int64 {
@@ -131,12 +131,21 @@ func totalMuti(result *pbmj.MJHuData, conf *mahjong.Rule) int64 {
 
 type HuData struct {
 	*mahjong.HuData
+	CheckFunc func(*HuData) bool // 自定义检查函数
 }
 
 func newHuData(data *mahjong.HuData) *HuData {
 	return &HuData{
 		HuData: data,
 	}
+}
+
+// Checkfunc 调用自定义检查函数
+func (h *HuData) Checkfunc() bool {
+	if h.CheckFunc != nil {
+		return h.CheckFunc(h)
+	}
+	return false
 }
 func (h *HuData) calcGen() int32 {
 	// 获取玩家数据
@@ -182,9 +191,7 @@ func (h *HuData) getHuTypes() []int32 {
 	}
 	return types
 }
-
 func (h *HuData) check(types []int32, cfg huTypeConfig) []int32 {
-
 	if !cfg.checkFunc(h) {
 		return types
 	}
@@ -197,8 +204,8 @@ func (h *HuData) check(types []int32, cfg huTypeConfig) []int32 {
 	return append(newTypes, cfg.huType)
 }
 
-func isQinYiSe(huData *HuData) bool {
-	tiles := huData.Tiles
+func (h *HuData) isQinYiSe() bool {
+	tiles := h.Tiles
 	if len(tiles) == 0 {
 		return false
 	}
@@ -209,7 +216,7 @@ func isQinYiSe(huData *HuData) bool {
 			return false
 		}
 	}
-	playData := huData.PlayData
+	playData := h.PlayData
 	for _, g := range playData.GetPonGroups() {
 		if g.Tile.Color() != firstColor {
 			return false
@@ -223,13 +230,13 @@ func isQinYiSe(huData *HuData) bool {
 	return true
 }
 
-func isLongQiDui(huData *HuData) bool {
-	if huData.HuCoreType != mahjong.HU_7DUI {
+func (h *HuData) isLongQiDui() bool {
+	if h.HuCoreType != mahjong.HU_7DUI {
 		return false
 	}
 
 	tileMap := make(map[mahjong.Tile]int)
-	for _, tile := range huData.Tiles {
+	for _, tile := range h.Tiles {
 		tileMap[tile]++
 	}
 	for _, count := range tileMap {
@@ -240,32 +247,35 @@ func isLongQiDui(huData *HuData) bool {
 	return false
 }
 
-func isJinGouDiao(huData *HuData) bool {
-	return len(huData.Tiles) == 2
+func (h *HuData) isJinGouDiao() bool {
+	return len(h.Tiles) == 2
 }
 
-func isQinPon(huData *HuData) bool {
-	return isQinYiSe(huData) && huData.HuCoreType == mahjong.HU_PON
+func (h *HuData) isQinPon() bool {
+	return h.isQinYiSe() && h.HuCoreType == mahjong.HU_PON
 }
 
-func isQinJinGouDiao(huData *HuData) bool {
-	return isQinYiSe(huData) && isJinGouDiao(huData)
+func (h *HuData) isQinJinGouDiao() bool {
+	return h.isQinYiSe() && h.isJinGouDiao()
 }
 
-func isQinQiDui(huData *HuData) bool {
-	return isQinYiSe(huData) && huData.HuCoreType == mahjong.HU_7DUI
+func (h *HuData) isQinQiDui() bool {
+	return h.isQinYiSe() && h.HuCoreType == mahjong.HU_7DUI
 }
 
-func isQingLongQiDui(huData *HuData) bool {
-	return isQinYiSe(huData) && isLongQiDui(huData)
+func (h *HuData) isQingLongQiDui() bool {
+	return h.isQinYiSe() && h.isLongQiDui()
 }
 
-func isYiTiaoLong(huData *HuData) bool {
-	tiles := huData.Tiles
-	if len(tiles) < 9 {
+func (h *HuData) isYiTiaoLong() bool {
+	if h.Play.GetRule().GetValue(RuleYiTiaoLong) == 0 {
 		return false
 	}
 
+	tiles := h.Tiles
+	if len(tiles) < 9 {
+		return false
+	}
 	// 按花色分组
 	colorGroups := make(map[mahjong.EColor][]mahjong.Tile)
 	for _, tile := range tiles {
@@ -299,9 +309,12 @@ func isYiTiaoLong(huData *HuData) bool {
 	return false
 }
 
-func isMenQing(huData *HuData) bool {
-	playData := huData.PlayData
+func (h *HuData) isMenQing() bool {
+	if h.Play.GetRule().GetValue(RuleMQZZ) == 0 {
+		return false
+	}
 
+	playData := h.PlayData
 	if len(playData.GetPonGroups()) > 0 {
 		return false
 	}
@@ -315,30 +328,27 @@ func isMenQing(huData *HuData) bool {
 	return true
 }
 
-func isZhongZhang(huData *HuData) bool {
-	playData := huData.PlayData
+func (h *HuData) isZhongZhang() bool {
+	if h.Play.GetRule().GetValue(RuleMQZZ) == 0 {
+		return false
+	}
 
-	// 1. 检查手牌
+	playData := h.PlayData
 	for _, tile := range playData.GetHandTiles() {
 		if !isZhongTile(tile) {
 			return false
 		}
 	}
-
-	// 2. 检查碰牌
 	for _, pon := range playData.GetPonGroups() {
 		if !isZhongTile(pon.Tile) {
 			return false
 		}
 	}
-
-	// 3. 检查杠牌
 	for _, kon := range playData.GetKonGroups() {
 		if !isZhongTile(kon.Tile) {
 			return false
 		}
 	}
-
 	return true
 }
 
@@ -351,8 +361,11 @@ func isZhongTile(tile mahjong.Tile) bool {
 	return false // 字牌不算中张
 }
 
-func isJiangDui19(huData *HuData) bool {
-	tiles := huData.Tiles
+func (h *HuData) isJiangDui19() bool {
+	if h.Play.GetRule().GetValue(RuleJiangDui19) == 0 {
+		return false
+	}
+	tiles := h.Tiles
 	for _, tile := range tiles {
 		if tile.IsHonor() {
 			continue // 字牌算幺九
@@ -364,11 +377,11 @@ func isJiangDui19(huData *HuData) bool {
 	return true
 }
 
-func isJueZhang(huData *HuData) bool {
-	tile := huData.CurTile
+func (h *HuData) isJueZhang() bool {
+	tile := h.CurTile
 	totalCount := 0
-	for i := range huData.Play.GetPlayerCount() {
-		playData := huData.Play.GetPlayData(i)
+	for i := range h.Play.GetPlayerCount() {
+		playData := h.Play.GetPlayData(i)
 		for _, pon := range playData.GetPonGroups() {
 			if pon.Tile == tile {
 				totalCount += 3
@@ -380,14 +393,14 @@ func isJueZhang(huData *HuData) bool {
 			}
 		}
 	}
-	if huData.Self {
+	if h.Self {
 		totalCount += 1
 	}
 	return totalCount >= 4
 }
 
-func isJiangDui258(huData *HuData) bool {
-	tiles := huData.Tiles
+func (h *HuData) isJiangDui258() bool {
+	tiles := h.Tiles
 	for _, tile := range tiles {
 		point := tile.Point()
 		if point != 1 && point != 4 && point != 7 {
@@ -397,36 +410,45 @@ func isJiangDui258(huData *HuData) bool {
 	return true
 }
 
-func isKaZhang(huData *HuData) bool {
-	if len(huData.PlayData.GetCallData()) > 1 { //卡张仅一个听口
+func (h *HuData) isKaZhang() bool {
+	if h.Play.GetRule().GetValue(RuleKaBianZhang) == 0 {
 		return false
 	}
-	waitTile := huData.CurTile
+	if len(h.PlayData.GetCallData()) > 1 { //卡张仅一个听口
+		return false
+	}
+	waitTile := h.CurTile
 	point := waitTile.Point()
 
 	if point <= 0 || point >= 8 { // 在0-8范围内，1-7需要检查相邻牌
 		return false
 	}
 
-	return huData.CheckShun(waitTile, point-1, point+1)
+	return h.CheckShun(waitTile, point-1, point+1)
 }
 
-func isBianZhang(huData *HuData) bool {
-	waitTile := huData.CurTile
+func (h *HuData) isBianZhang() bool {
+	if h.Play.GetRule().GetValue(RuleKaBianZhang) == 0 {
+		return false
+	}
+	waitTile := h.CurTile
 	point := waitTile.Point()
 
 	switch point {
 	case 2:
-		return huData.CheckShun(waitTile, point-1, point-2) && !huData.CheckShun(waitTile, point+1, point+2)
+		return h.CheckShun(waitTile, point-1, point-2) && !h.CheckShun(waitTile, point+1, point+2)
 	case 6:
-		return !huData.CheckShun(waitTile, point-1, point-2) && huData.CheckShun(waitTile, point+1, point+2)
+		return !h.CheckShun(waitTile, point-1, point-2) && h.CheckShun(waitTile, point+1, point+2)
 	default:
 		return false
 	}
 }
 
-func isJiaWuXing(huData *HuData) bool {
-	if isKaZhang(huData) && huData.CurTile.Point() == 4 {
+func (h *HuData) isJiaWuXing() bool {
+	if h.Play.GetRule().GetValue(RuleJiaXinWu) == 0 {
+		return false
+	}
+	if h.isKaZhang() && h.CurTile.Point() == 4 {
 		return true
 	}
 	return false

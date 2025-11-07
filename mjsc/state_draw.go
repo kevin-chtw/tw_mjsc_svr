@@ -47,6 +47,9 @@ func (s *StateDraw) liuJu() {
 }
 
 func (s *StateDraw) tuiKon(seat int32) {
+	if s.game.GetRule().GetValue(RuleTuiYu) == 0 {
+		return
+	}
 	scoreNodes := s.game.scorelator.GetKonScores(seat)
 	for _, sn := range scoreNodes {
 		scores := make([]int64, len(sn.Scores))
@@ -66,6 +69,9 @@ func (s *StateDraw) tuiKon(seat int32) {
 }
 
 func (s *StateDraw) chaJiao(seat int32) {
+	if s.game.GetRule().GetValue(RuleChaJiao) == 0 {
+		return
+	}
 	multis := make([]int64, s.game.GetPlayerCount()) // 预分配数组
 	for i := range s.game.GetPlayerCount() {
 		if s.game.GetPlayer(i).IsOut() || i == seat {
