@@ -23,7 +23,7 @@ func NewGame(t *game.Table, id int32) game.IGame {
 	g.Game = mahjong.NewGame(g, t, id)
 	g.play = NewPlay(g)
 	g.sender = NewSender(g)
-	g.scorelator = mahjong.NewScorelatorMany(g.Game, mahjong.ScoreTypeMinScore)
+	g.scorelator = mahjong.NewScorelatorMany(g.Game, mahjong.ScoreType(g.GetRule().GetValue(RuleScoreType)))
 
 	return g
 }
