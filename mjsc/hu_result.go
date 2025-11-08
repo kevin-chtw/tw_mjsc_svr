@@ -40,7 +40,7 @@ const (
 	ZhongZhang  = 105 //中张
 	JiangDui19  = 106 //幺九将对
 	JiangDui258 = 107 //258将对
-	BianZhang   = 108 //卡张
+	BianZhang   = 108 //边张
 )
 
 var addMulti = map[int32]int64{
