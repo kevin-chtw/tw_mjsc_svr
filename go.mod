@@ -1,4 +1,4 @@
-module github.com/kevin-chtw/tw_game_svr
+module github.com/kevin-chtw/tw_mjsc_svr
 
 go 1.24.4
 

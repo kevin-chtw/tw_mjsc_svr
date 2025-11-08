@@ -6,7 +6,7 @@ import (
 	"github.com/kevin-chtw/tw_common/gamebase/game"
 	"github.com/kevin-chtw/tw_common/gamebase/service"
 	"github.com/kevin-chtw/tw_common/utils"
-	"github.com/kevin-chtw/tw_game_svr/mjsc"
+	"github.com/kevin-chtw/tw_mjsc_svr/mjsc"
 	"github.com/sirupsen/logrus"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/component"
