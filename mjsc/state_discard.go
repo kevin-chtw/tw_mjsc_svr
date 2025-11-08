@@ -31,7 +31,10 @@ func (s *StateDiscard) OnEnter() {
 	s.operates = s.game.play.FetchSelfOperates()
 	s.game.sender.SendRequestAck(s.game.play.GetCurSeat(), s.operates)
 	discardTime := s.game.GetRule().GetValue(RuleDiscardTime)
-	logger.Log.Infof("discard time: %d", discardTime)
+	if s.game.GetPlayer(s.game.play.GetCurSeat()).IsTrusted() {
+		s.discard(mahjong.TileNull)
+		return
+	}
 	s.AsyncMsgTimer(s.OnMsg, time.Second*time.Duration(discardTime), s.OnTimeout)
 }
 
@@ -98,4 +101,5 @@ func (s *StateDiscard) OnTimeout() {
 	}
 	logger.Log.Warnf("discard timeout")
 	s.discard(mahjong.TileNull)
+	s.game.sender.SendTrustAck(s.game.play.GetCurSeat(), true)
 }

@@ -30,11 +30,10 @@ func (s *StateWait) OnEnter() {
 		if i == discardSeat {
 			continue
 		}
-		trusted := s.game.GetPlayer(i).IsTrusted()
 		operates := s.game.play.FetchWaitOperates(i)
 		s.operatesForSeats[i] = operates
 
-		if operates.Value != mahjong.OperatePass && !trusted {
+		if operates.Value != mahjong.OperatePass && !s.game.GetPlayer(i).IsTrusted() {
 			s.game.sender.SendRequestAck(i, operates)
 		} else {
 			s.setReqOperate(i, s.getDefaultOperate(i))
