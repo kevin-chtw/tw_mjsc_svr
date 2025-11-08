@@ -83,7 +83,15 @@ func (s *StateSwapTiles) executeSwap() {
 		s.game.play.GetPlayData(st.To).SwapIn(tiles)
 	}
 	s.game.sender.sendSwapTilesResultAck(swapType, s.swapTiles)
-	s.game.SetNextState(NewStateDingque)
+	if s.game.GetRule().GetValue(RuleLiangMen) != 0 {
+		for seat := range s.game.GetPlayerCount() {
+			s.game.play.FreshCallData(seat)
+			s.game.sender.SendCallDataAck(seat)
+		}
+		s.game.SetNextState(NewStateDiscard)
+	} else {
+		s.WaitAni(func() { s.game.SetNextState(NewStateDingque) })
+	}
 }
 
 func (s *StateSwapTiles) swapClockwise() {

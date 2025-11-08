@@ -11,7 +11,7 @@ func init() {
 
 type service struct {
 	tiles        map[mahjong.Tile]int
-	tilesFeng    map[mahjong.Tile]int
+	tiles2Men    map[mahjong.Tile]int
 	defaultRules [RuleEnd]int
 	huCore       *mahjong.HuCore
 	fdRules      map[string]int32
@@ -20,31 +20,34 @@ type service struct {
 func NewService() mahjong.IService {
 	s := &service{
 		tiles:        make(map[mahjong.Tile]int),
-		tilesFeng:    make(map[mahjong.Tile]int),
-		defaultRules: [RuleEnd]int{10, 8, 1, 10, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		tiles2Men:    make(map[mahjong.Tile]int),
+		defaultRules: [RuleEnd]int{10, 8, 1, 10, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
 		huCore:       mahjong.NewHuCore(14),
 		fdRules:      make(map[string]int32),
 	}
-	s.init()
+	s.initTiles()
 	s.initFdRules()
 	return s
 }
-func (s *service) init() {
-	for color := mahjong.ColorCharacter; color <= mahjong.ColorDragon; color++ {
+func (s *service) initTiles() {
+	for color := mahjong.ColorCharacter; color <= mahjong.ColorDot; color++ {
 		pc := mahjong.PointCountByColor[color]
 		for i := range pc {
 			tile := mahjong.MakeTile(color, i)
-			if color < mahjong.ColorWind {
-				s.tiles[tile] = 4
+			s.tiles[tile] = 4
+			if color != mahjong.ColorCharacter {
+				s.tiles2Men[tile] = 4
 			}
-			s.tilesFeng[tile] = 4
 		}
 	}
-
 }
 
 func (s *service) GetAllTiles(conf *mahjong.Rule) map[mahjong.Tile]int {
-	return s.tiles
+	if conf.GetValue(RuleLiangMen) != 0 {
+		return s.tiles2Men
+	} else {
+		return s.tiles
+	}
 }
 
 func (s *service) GetHandCount() int {
@@ -68,6 +71,7 @@ func (s *service) initFdRules() {
 	s.fdRules["chajiao"] = RuleChaJiao       //查大叫 12
 	s.fdRules["tuiyu"] = RuleTuiYu           //退雨 13
 	s.fdRules["haidi"] = RuleHaiDi           //海底捞月 14
+	s.fdRules["liangmen"] = RuleLiangMen     //两门 15
 }
 
 func (s *service) GetFdRules() map[string]int32 {

@@ -16,5 +16,6 @@ const (
 	RuleChaJiao            //查大叫 12
 	RuleTuiYu              //退雨 13
 	RuleHaiDi              //海底捞月 14
+	RuleLiangMen           //两门 15
 	RuleEnd
 )
