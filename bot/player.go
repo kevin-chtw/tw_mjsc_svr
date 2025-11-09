@@ -19,6 +19,6 @@ func NewPlayer(uid string) *game.BotPlayer {
 }
 
 func (p *Player) OnBotMsg(msg proto.Message) error {
-	logger.Log.Debugf("bot player %s received msg: %v", p.Uid, msg)
+	logger.Log.Info("bot player %s received msg: %v", p.Uid, msg)
 	return nil
 }
