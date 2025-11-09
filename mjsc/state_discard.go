@@ -86,10 +86,16 @@ func (s *StateDiscard) kon(tile mahjong.Tile) {
 func (s *StateDiscard) hu(tile mahjong.Tile) {
 	huSeats := make([]int32, 0)
 	huSeats = append(huSeats, s.game.play.GetCurSeat())
-	multiples := s.game.play.Zimo()
-	s.game.sender.SendHuAck(huSeats, mahjong.SeatNull)
+	var multiples []int64
+	paoSeat := s.game.play.IsAfterZhiKon()
+	if s.game.GetRule().GetValue(RuleDianKHSDP) != 0 && paoSeat != mahjong.SeatNull {
+		multiples = s.game.play.DianKonHua(paoSeat)
+	} else {
+		multiples = s.game.play.Zimo()
+	}
+	s.game.sender.SendHuAck(huSeats, paoSeat)
 	scores := s.game.scorelator.CalcMulti(s.game.play.GetCurSeat(), mahjong.ScoreReasonHu, multiples)
-	s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonHu, scores, s.game.play.GetCurTile(), mahjong.SeatNull, huSeats)
+	s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonHu, scores, s.game.play.GetCurTile(), paoSeat, huSeats)
 	s.game.GetPlayer(s.game.play.GetCurSeat()).SetOut()
 	s.game.play.DoSwitchSeat(mahjong.SeatNull)
 	s.game.SetNextState(NewStateDraw)

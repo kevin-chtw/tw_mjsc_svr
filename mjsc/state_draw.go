@@ -35,8 +35,8 @@ func (s *StateDraw) liuJu() {
 		if s.game.GetPlayer(i).IsOut() {
 			continue
 		}
-		callData := s.game.play.GetPlayData(i).GetCallData()
-		if len(callData) == 0 {
+
+		if !s.isCall(i) {
 			s.tuiKon(i)
 			s.chaJiao(i)
 		}
@@ -78,19 +78,47 @@ func (s *StateDraw) chaJiao(seat int32) {
 			continue
 		}
 
-		callData := s.game.play.GetPlayData(i).GetCallData()
-		if len(callData) == 0 {
+		maxMulti := s.maxMulti(seat)
+		if maxMulti <= 0 {
 			continue
-		}
-		maxMulti := int64(0)
-		for _, v := range callData {
-			if v > maxMulti {
-				maxMulti = v
-			}
 		}
 		multis[i] = maxMulti
 		multis[seat] -= maxMulti
 	}
 	final := s.game.scorelator.CalcMulti(mahjong.SeatNull, mahjong.ScoreReasonChaJiao, multis)
 	s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonChaJiao, final, mahjong.TileNull, mahjong.SeatNull, nil)
+}
+
+func (s *StateDraw) isCall(seat int32) bool {
+	callData := s.game.play.GetPlayData(seat).GetCallData()
+	if len(callData) == 0 {
+		return false
+	}
+
+	if s.game.GetRule().GetValue(RuleSiJBSJ) == 0 {
+		return true
+	}
+
+	for t := range callData {
+		if s.game.play.showCount(t) < 4 {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *StateDraw) maxMulti(seat int32) int64 {
+	if !s.isCall(seat) {
+		return 0
+	}
+	maxMulti := int64(0)
+	callData := s.game.play.GetPlayData(seat).GetCallData()
+	for t, multi := range callData {
+		if s.game.play.showCount(t) >= 4 {
+			continue
+		} else if multi > maxMulti {
+			maxMulti = multi
+		}
+	}
+	return maxMulti
 }

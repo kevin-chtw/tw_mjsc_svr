@@ -133,7 +133,11 @@ func (s *StateWait) excuteOperate(seat int32, operate int) {
 	if operate == mahjong.OperateKon {
 		s.game.play.ZhiKon(seat)
 		s.game.sender.SendKonAck(seat, s.game.play.GetCurTile(), mahjong.KonTypeZhi)
-		scores := s.game.scorelator.CalcKon(mahjong.ScoreReasonZhiKon, seat, s.game.play.GetCurSeat(), 2, 1)
+		otherMulti := 0
+		if s.game.GetRule().GetValue(RuleChaGua) != 0 {
+			otherMulti = 1
+		}
+		scores := s.game.scorelator.CalcKon(mahjong.ScoreReasonZhiKon, seat, s.game.play.GetCurSeat(), 2, int64(otherMulti))
 		s.game.sender.SendScoreChangeAck(mahjong.ScoreReasonZhiKon, scores, s.game.play.GetCurTile(), mahjong.SeatNull, nil)
 		s.toDrawState(seat)
 		return

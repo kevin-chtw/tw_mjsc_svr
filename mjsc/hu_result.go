@@ -378,25 +378,15 @@ func (h *HuData) isJiangDui19() bool {
 }
 
 func (h *HuData) isJueZhang() bool {
-	tile := h.CurTile
-	totalCount := 0
-	for i := range h.Play.GetPlayerCount() {
-		playData := h.Play.GetPlayData(i)
-		for _, pon := range playData.GetPonGroups() {
-			if pon.Tile == tile {
-				totalCount += 3
-			}
-		}
-		for _, t := range playData.GetOutTiles() {
-			if t == tile {
-				totalCount += 1
-			}
-		}
+	if h.Play.GetRule().GetValue(RuleJueZhang) == 0 {
+		return false
 	}
+	play := h.Play.PlayImp.(*Play)
+	count := play.showCount(h.CurTile)
 	if h.Self {
-		totalCount += 1
+		count += 1
 	}
-	return totalCount >= 4
+	return count >= 4
 }
 
 func (h *HuData) isJiangDui258() bool {

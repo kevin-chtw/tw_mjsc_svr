@@ -115,3 +115,42 @@ func (p *Play) paoHuTypes(seat int32) []int32 {
 	}
 	return types
 }
+
+func (p *Play) showCount(tile mahjong.Tile) int {
+	count := 0
+	playerCount := p.GetPlayerCount()
+
+	for i := int32(0); i < playerCount; i++ {
+		playData := p.GetPlayData(i)
+
+		// 检查碰组
+		for _, pon := range playData.GetPonGroups() {
+			if pon.Tile == tile {
+				count += 3
+				if count >= 4 {
+					return 4
+				}
+				break
+			}
+		}
+
+		// 检查杠组（只计算明杠）
+		for _, kon := range playData.GetKonGroups() {
+			if kon.Tile == tile && kon.Type != mahjong.KonTypeAn {
+				count += 4
+				return 4
+			}
+		}
+
+		// 检查出牌
+		for _, t := range playData.GetOutTiles() {
+			if t == tile {
+				count++
+				if count >= 4 {
+					return 4
+				}
+			}
+		}
+	}
+	return count
+}
