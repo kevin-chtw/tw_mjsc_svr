@@ -6,6 +6,7 @@ import (
 	"github.com/kevin-chtw/tw_common/gamebase/game"
 	"github.com/kevin-chtw/tw_common/gamebase/service"
 	"github.com/kevin-chtw/tw_common/utils"
+	"github.com/kevin-chtw/tw_mjsc_svr/bot"
 	"github.com/kevin-chtw/tw_mjsc_svr/mjsc"
 	"github.com/sirupsen/logrus"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
@@ -31,8 +32,7 @@ func main() {
 	defer app.Shutdown()
 
 	logger.Log.Infof("Pitaya server of type %s started", serverType)
-	game.Register(serverType, mjsc.NewGame)
-	game.InitGame(app)
+	game.Init(app, mjsc.NewGame, bot.NewPlayer)
 	initServices()
 	app.Start()
 }
