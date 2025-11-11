@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	inputDim  = 599 // 匹配 RichFeature.ToVector() 的实际输出长度
+	inputDim  = 604 // 匹配 RichFeature.ToVector() 的实际输出长度
 	outputDim = 34
 	batchSize = 32
 	tau       = 0.01

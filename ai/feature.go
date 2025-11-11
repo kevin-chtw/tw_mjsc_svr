@@ -11,13 +11,14 @@ type RichFeature struct {
 	PlayerLacks   [4][3]float32  // 4×3 - 各玩家缺门花色（one-hot编码）
 	CurrentSeat   [4]float32     // 4 - 当前玩家座位号（one-hot编码）
 	TotalTiles    float32        // 1 - 总牌张数（归一化）
+	Operates      [5]float32     // 5 - 当前可执行操作（one-hot编码）
 }
 
 // ToVector flatten → []float32 精简特征向量
 func (f RichFeature) ToVector() []float32 {
-	// 计算新特征维度: 34 + 136 + 408 + 21 = 599
-	// 手牌(34) + 副露(4×34=136) + 碰杠胡(3×4×34=408) + 玩家状态(4+12+4+1=21)
-	out := make([]float32, 0, 599)
+	// 计算新特征维度: 34 + 136 + 408 + 21 + 5 = 604
+	// 手牌(34) + 副露(4×34=136) + 碰杠胡(3×4×34=408) + 玩家状态(4+12+4+1=21) + 操作(5)
+	out := make([]float32, 0, 604)
 
 	// 手牌和副露特征 (34 + 136 = 170)
 	out = append(out, f.Hand[:]...) // 34
@@ -39,6 +40,9 @@ func (f RichFeature) ToVector() []float32 {
 	}
 	out = append(out, f.CurrentSeat[:]...) // 4
 	out = append(out, f.TotalTiles)        // 1
+
+	// 操作特征 (5)
+	out = append(out, f.Operates[:]...) // 5
 
 	return out
 }

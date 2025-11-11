@@ -107,5 +107,5 @@ func (s *StateDiscard) OnTimeout() {
 	}
 	logger.Log.Warnf("discard timeout")
 	s.discard(mahjong.TileNull)
-	s.game.sender.SendTrustAck(s.game.play.GetCurSeat(), true)
+	//s.game.sender.SendTrustAck(s.game.play.GetCurSeat(), true)
 }

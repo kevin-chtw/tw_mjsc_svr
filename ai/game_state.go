@@ -42,6 +42,7 @@ func (s *GameState) ToRichFeature() *RichFeature {
 		PlayerLacks:   [4][3]float32{},
 		CurrentSeat:   [4]float32{},
 		TotalTiles:    0.0,
+		Operates:      [5]float32{},
 	}
 
 	// 手牌
@@ -110,6 +111,25 @@ func (s *GameState) ToRichFeature() *RichFeature {
 	// 总牌张数（归一化到0-1范围，假设最大牌数为144）
 	if s.TotalTiles > 0 {
 		r.TotalTiles = float32(s.TotalTiles) / 144.0
+	}
+
+	// 设置可执行操作（one-hot编码）
+	if s.Operates != nil {
+		if s.Operates.HasOperate(mahjong.OperateDiscard) {
+			r.Operates[0] = 1.0
+		}
+		if s.Operates.HasOperate(mahjong.OperateHu) {
+			r.Operates[1] = 1.0
+		}
+		if s.Operates.HasOperate(mahjong.OperatePon) {
+			r.Operates[2] = 1.0
+		}
+		if s.Operates.HasOperate(mahjong.OperateKon) {
+			r.Operates[3] = 1.0
+		}
+		if s.Operates.HasOperate(mahjong.OperatePass) {
+			r.Operates[4] = 1.0
+		}
 	}
 
 	return r
