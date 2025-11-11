@@ -1,8 +1,6 @@
 package ai
 
 import (
-	"time"
-
 	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
 )
 
@@ -11,9 +9,6 @@ type ActionRecord struct {
 	Operate   int
 	TileIndex int
 	Obs       []float32
-	QValues   []float32
-	Feature   *RichFeature
-	TimeStep  int
 }
 
 // GameState 小型状态快照
@@ -52,7 +47,7 @@ func (s *GameState) RecordAction(operate int, tile mahjong.Tile) {
 	record := ActionRecord{
 		Operate:   operate,
 		TileIndex: mahjong.ToIndex(tile),
-		TimeStep:  int(time.Now().UnixNano()),
+		Obs:       s.ToRichFeature().ToVector(),
 	}
 	s.ActionHistory = append(s.ActionHistory, record)
 }

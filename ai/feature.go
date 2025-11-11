@@ -46,25 +46,3 @@ func (f RichFeature) ToVector() []float32 {
 
 	return out
 }
-
-// DangerMask 危险度 0=安全 1=危险
-func DangerMask(f *RichFeature, lack int) [34]bool {
-	var mask [34]bool
-	for i := range 34 {
-		suit := i / 9
-		if suit == lack {
-			mask[i] = true // 缺门→别人可能要
-			continue
-		}
-		seen := 0
-		for p := range 4 {
-			seen += int(f.Furo[p][i])
-		}
-		mask[i] = seen < 2 // 已见<2 张→危险
-	}
-	return mask
-}
-
-func EffiReward(old, new [34]float32, lack int) float32 {
-	return 0
-}

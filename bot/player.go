@@ -256,6 +256,6 @@ func (p *Player) resultAck(msg proto.Message) error {
 		}
 	}
 	isWin := finalScore > 0
-	ai.GetRichAI(true).NotifyGameResult(p.gameState, isWin, finalScore)
+	ai.GetRichAI(true).GameEndUpdate(p.gameState, isWin, finalScore)
 	return nil
 }

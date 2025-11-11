@@ -3,6 +3,8 @@ package ai
 import (
 	"container/heap"
 	"math"
+
+	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
 )
 
 type experience struct {
@@ -58,4 +60,24 @@ func (p *PER) Sample(batch int) (states, targets [][]float32) {
 		heap.Push(&p.pq, exp)
 	}
 	return
+}
+
+// Len 返回当前经验池样本数
+func (p *PER) Len() int { return len(p.pq) }
+
+func actionIndex(op int, tile int) int {
+	switch op {
+	case mahjong.OperateDiscard:
+		return tile
+	case mahjong.OperatePon:
+		return 34 + tile
+	case mahjong.OperateKon:
+		return 68 + tile
+	case mahjong.OperateHu:
+		return 102 + tile
+	case mahjong.OperatePass:
+		return 136
+	default:
+		return 136
+	}
 }

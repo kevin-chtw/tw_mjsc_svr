@@ -7,7 +7,7 @@ import (
 
 const (
 	inputDim  = 604 // 匹配 RichFeature.ToVector() 的实际输出长度
-	outputDim = 34
+	outputDim = 134
 	batchSize = 32
 	tau       = 0.01
 )
@@ -105,18 +105,6 @@ func (net *DQNet) Train(states [][]float32, targets [][]float32) float32 {
 	valueGrads := gorgonia.NodesToValueGrads(net.learnables)
 	net.solver.Step(valueGrads)
 	return lossVal
-}
-
-// SoftUpdate 复制权重 → target（τ=0.01）
-func (net *DQNet) SoftUpdate(target *DQNet) {
-	for i, src := range net.learnables {
-		dst := target.learnables[i]
-		srcVal := src.Value().Data().([]float32)
-		dstVal := dst.Value().Data().([]float32)
-		for j := range srcVal {
-			dstVal[j] = tau*srcVal[j] + (1-tau)*dstVal[j]
-		}
-	}
 }
 
 func flattenF32(x [][]float32) []float32 {
