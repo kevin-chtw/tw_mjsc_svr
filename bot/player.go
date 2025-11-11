@@ -229,7 +229,7 @@ func (p *Player) huAck(msg proto.Message) error {
 
 func (p *Player) konAck(msg proto.Message) error {
 	ack := msg.(*pbmj.MJKonAck)
-	p.gameState.GangTiles[int(ack.Seat)] = append(p.gameState.GangTiles[int(ack.Seat)], mahjong.Tile(ack.Tile))
+	p.gameState.KonTiles[int(ack.Seat)] = append(p.gameState.KonTiles[int(ack.Seat)], mahjong.Tile(ack.Tile))
 	if ack.Seat == int32(p.gameState.CurrentSeat) {
 		p.gameState.Hand[mahjong.Tile(ack.Tile)] = 0
 	}

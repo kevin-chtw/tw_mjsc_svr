@@ -19,18 +19,6 @@ type RichAI struct {
 	per       *PER
 	learnable bool
 	mu        sync.RWMutex
-	steps     int
-	history   []ActionRecord // 新增：操作历史记录
-}
-
-// ActionRecord 记录每一步操作
-type ActionRecord struct {
-	Operate   int
-	TileIndex int
-	Obs       []float32
-	QValues   []float32
-	Feature   *RichFeature
-	TimeStep  int
 }
 
 func GetRichAI(learnable bool) *RichAI {
@@ -59,325 +47,219 @@ type StepOutput struct {
 
 // Decision 统一决策结果
 type Decision struct {
-	Operate    int          `json:"operate"`    // mahjong.Operate 类型
-	Tile       mahjong.Tile `json:"tile"`       // 牌值
-	QValue     float32      `json:"q_value"`    // 决策Q值
-	Reason     string       `json:"reason"`     // 决策原因
-	Confidence float32      `json:"confidence"` // 置信度
+	Operate int          `json:"operate"` // mahjong.Operate 类型
+	Tile    mahjong.Tile `json:"tile"`    // 牌值
+	QValue  float32      `json:"q_value"` // 决策Q值
 }
 
 // Step 统一决策入口 - 外部传入可行操作和局面
-func (ai *RichAI) Step(state *GameState) Decision {
-	// 1. 从 mahjong.Operates 中提取可行动作
-	validActions := extractperates(state.Operates)
-
-	// 2. 预处理: 转换状态为特征向量
-	feat := state.ToRichFeature()
-	obs := feat.ToVector()
-
-	// 3. 获取网络输出
-	ai.mu.RLock()
-	qValues := ai.net.Forward(obs)
-	ai.mu.RUnlock()
-
-	// 4. 根据可行动作进行决策
-	var bestDecision Decision
-	bestDecision.QValue = -1e9
-
-	// 预计算所有可能的决策
-	var decisions []Decision
-
-	for _, action := range validActions {
-		switch action {
-		case mahjong.OperateDiscard:
-			// 打牌决策 - 找出所有可能的打牌选择
-			for i := range 34 {
-				tile := mahjong.FromIndex(i)
-				if state.Hand[tile] <= 0 {
-					continue
-				}
-
-				isLackColor := tile.Color() == state.PlayerLacks[state.CurrentSeat]
-				bonus := float32(0)
-				if isLackColor {
-					bonus = 0.5
-				}
-
-				currentQ := qValues[i] + bonus
-				decisions = append(decisions, Decision{
-					Operate:    mahjong.OperateDiscard,
-					Tile:       tile,
-					QValue:     currentQ,
-					Reason:     "打牌选择",
-					Confidence: sigmoid(currentQ),
-				})
-			}
-
-		case mahjong.OperateHu:
-			// 胡牌决策
-			if state.Operates != nil && state.Operates.HasOperate(mahjong.OperateHu) {
-				huTile := state.LastTile
-				if huTile == 0 && state.SelfTurn {
-					// 自摸时选择手牌中Q值最高的牌
-					maxQ := float32(-1e9)
-					for i := range 34 {
-						tile := mahjong.FromIndex(i)
-						if state.Hand[tile] > 0 && qValues[i] > maxQ {
-							maxQ = qValues[i]
-							huTile = tile
-						}
-					}
-				}
-
-				if huTile != 0 {
-					decisions = append(decisions, Decision{
-						Operate:    mahjong.OperateHu,
-						Tile:       huTile,
-						QValue:     qValues[mahjong.ToIndex(huTile)],
-						Reason:     "胡牌优先",
-						Confidence: sigmoid(qValues[mahjong.ToIndex(huTile)]),
-					})
-				}
-			}
-
-		case mahjong.OperatePon:
-			// 碰牌决策
-			if state.Operates != nil && state.Operates.HasOperate(mahjong.OperatePon) {
-				bestPeng, qValue := pickBestPeng(ai, state.LastTile, state)
-				decisions = append(decisions, Decision{
-					Operate:    mahjong.OperatePon,
-					Tile:       bestPeng,
-					QValue:     qValue,
-					Reason:     "高价值碰牌",
-					Confidence: sigmoid(qValue),
-				})
-			}
-
-		case mahjong.OperateKon:
-			// 杠牌决策
-			if state.Operates != nil && state.Operates.HasOperate(mahjong.OperateKon) {
-				bestGang, qValue := pickBestGang(ai, state.LastTile, state)
-				decisions = append(decisions, Decision{
-					Operate:    mahjong.OperateKon,
-					Tile:       bestGang,
-					QValue:     qValue,
-					Reason:     "高价值杠牌",
-					Confidence: sigmoid(qValue),
-				})
-			}
-
-		case mahjong.OperatePass:
-			// 过牌决策
-			passQValue := calculatePassQValue(state, qValues)
-			decisions = append(decisions, Decision{
-				Operate:    mahjong.OperatePass,
-				Tile:       0,
-				QValue:     passQValue,
-				Reason:     "主动选择过牌",
-				Confidence: sigmoid(passQValue),
-			})
-		}
+func (ai *RichAI) Step(state *GameState) *Decision {
+	d := &Decision{
+		QValue: -1e9,
 	}
 
-	// 在所有可能的决策中选择Q值最高的
-	for _, decision := range decisions {
-		if decision.QValue > bestDecision.QValue {
-			bestDecision = decision
-		}
+	if state.Operates.HasOperate(mahjong.OperateDiscard) {
+		d = ai.discard(state, d)
 	}
 
-	// 5. 记录操作历史用于终局奖励计算
-	if ai.learnable && bestDecision.Operate != 0 {
-		ai.recordActionHistory(bestDecision.Operate, mahjong.ToIndex(bestDecision.Tile), feat)
+	if state.Operates.HasOperate(mahjong.OperateHu) {
+		d = ai.hu(state, d)
+	}
+	if state.Operates.HasOperate(mahjong.OperatePon) {
+		d = ai.pon(state, d)
+	}
+	if state.Operates.HasOperate(mahjong.OperateKon) {
+		d = ai.kon(state, d)
+	}
+	if state.Operates.HasOperate(mahjong.OperatePass) {
+		d = ai.pass(state, d)
 	}
 
-	return bestDecision
+	if ai.learnable && d.Operate != 0 {
+		state.RecordAction(d.Operate, d.Tile)
+	}
+
+	return d
 }
 
-// pickBestPeng 选择最优碰牌动作
-func pickBestPeng(ai *RichAI, tile mahjong.Tile, state *GameState) (mahjong.Tile, float32) {
-	// 转换状态为特征向量
-	feat := state.ToRichFeature()
-	obs := feat.ToVector()
-
-	// 获取网络输出
-	ai.mu.RLock()
-	qValues := ai.net.Forward(obs)
-	ai.mu.RUnlock()
-
-	// 返回当前牌和对应的Q值
-	return tile, qValues[tile]
-}
-
-// calculatePassQValue 计算"过"操作的Q值
-func calculatePassQValue(state *GameState, qValues []float32) float32 {
-	// 基础Q值为所有可能动作Q值的平均值
-	totalQ := float32(0)
-	count := 0
-
-	// 计算所有可能打牌动作的Q值平均值
+func (ai *RichAI) discard(state *GameState, d *Decision) *Decision {
 	for i := range 34 {
 		tile := mahjong.FromIndex(i)
-		if state.Hand[tile] > 0 {
-			totalQ += qValues[i]
-			count++
+		if state.Hand[tile] <= 0 {
+			continue
 		}
+
+		state.Hand[tile]--
+		state.PlayerMelds[state.CurrentSeat][tile]++
+		defer func() {
+			state.Hand[tile]++
+			state.PlayerMelds[state.CurrentSeat][tile]--
+		}()
+
+		currentQ := ai.currentScore(state)
+		if currentQ > d.QValue {
+			d = &Decision{
+				Operate: mahjong.OperateDiscard,
+				Tile:    tile,
+				QValue:  currentQ,
+			}
+		}
+	}
+	return d
+}
+
+func (ai *RichAI) hu(state *GameState, d *Decision) *Decision {
+	state.HuTiles[state.CurrentSeat] = state.LastTile
+	state.HuPlayers = append(state.HuPlayers, state.CurrentSeat)
+	defer func() {
+		state.HuTiles[state.CurrentSeat] = mahjong.TileNull
+		state.HuPlayers = state.HuPlayers[:len(state.HuPlayers)-1]
+	}()
+
+	currentQ := ai.currentScore(state)
+	if currentQ > d.QValue {
+		d = &Decision{
+			Operate: mahjong.OperateHu,
+			Tile:    state.LastTile,
+			QValue:  currentQ,
+		}
+	}
+	return d
+}
+
+func (ai *RichAI) pon(state *GameState, d *Decision) *Decision {
+	state.PonTiles[state.CurrentSeat] = append(state.PonTiles[state.CurrentSeat], state.LastTile)
+	state.Hand[state.LastTile] -= 2
+	defer func() {
+		state.PonTiles[state.CurrentSeat] = state.PonTiles[state.CurrentSeat][:len(state.PonTiles[state.CurrentSeat])-1]
+		state.Hand[state.LastTile] += 2
+	}()
+
+	currentQ := ai.currentScore(state)
+	if currentQ > d.QValue {
+		d = &Decision{
+			Operate: mahjong.OperatePon,
+			Tile:    state.LastTile,
+			QValue:  currentQ,
+		}
+	}
+	return d
+}
+
+func (ai *RichAI) kon(state *GameState, d *Decision) *Decision {
+	state.KonTiles[state.CurrentSeat] = append(state.KonTiles[state.CurrentSeat], state.LastTile)
+	count := state.Hand[state.LastTile]
+	state.Hand[state.LastTile] = 0
+	defer func() {
+		state.KonTiles[state.CurrentSeat] = state.KonTiles[state.CurrentSeat][:len(state.KonTiles[state.CurrentSeat])-1]
+		state.Hand[state.LastTile] += count
+	}()
+
+	currentQ := ai.currentScore(state)
+	if currentQ > d.QValue {
+		d = &Decision{
+			Operate: mahjong.OperateKon,
+			Tile:    state.LastTile,
+			QValue:  currentQ,
+		}
+	}
+	return d
+}
+
+func (ai *RichAI) pass(state *GameState, d *Decision) *Decision {
+	currentQ := ai.currentScore(state)
+	if currentQ > d.QValue {
+		d = &Decision{
+			Operate: mahjong.OperateHu,
+			Tile:    mahjong.TileNull,
+			QValue:  currentQ,
+		}
+	}
+	return d
+}
+
+// currentScore 返回当前局面的整体评分（平均Q值）
+func (ai *RichAI) currentScore(state *GameState) float32 {
+	qValues := ai.currentQ(state)
+	total := float32(0)
+	count := 0
+
+	for _, q := range qValues {
+		total += q
+		count++
 	}
 
 	if count > 0 {
-		// "过"操作的Q值基于平均Q值，但稍微降低
-		return totalQ/float32(count) - 0.1
+		return total / float32(count)
 	}
-
-	// 如果没有可打的牌，返回一个保守的Q值
-	return -0.5
+	return 0
 }
 
-// pickBestGang 选择最优杠牌动作
-func pickBestGang(ai *RichAI, tile mahjong.Tile, state *GameState) (mahjong.Tile, float32) {
-	// 转换状态为特征向量
-	feat := state.ToRichFeature()
-	obs := feat.ToVector()
+func (ai *RichAI) currentQ(state *GameState) []float32 {
+	newFeat := state.ToRichFeature()
+	newObs := newFeat.ToVector()
 
-	// 获取网络输出
 	ai.mu.RLock()
-	qValues := ai.net.Forward(obs)
-	ai.mu.RUnlock()
+	defer ai.mu.RUnlock()
 
-	// 返回当前牌和对应的Q值
-	return tile, qValues[tile]
-}
-
-// extractperates 从 mahjong.Operates 中提取可行动作
-func extractperates(operates *mahjong.Operates) []int {
-	var validActions []int
-
-	if operates.HasOperate(mahjong.OperateDiscard) {
-		validActions = append(validActions, mahjong.OperateDiscard)
-	}
-
-	if operates.HasOperate(mahjong.OperateHu) {
-		validActions = append(validActions, mahjong.OperateHu)
-	}
-
-	if operates.HasOperate(mahjong.OperatePon) {
-		validActions = append(validActions, mahjong.OperatePon)
-	}
-
-	if operates.HasOperate(mahjong.OperateKon) {
-		validActions = append(validActions, mahjong.OperateKon)
-	}
-
-	if operates.HasOperate(mahjong.OperatePass) {
-		validActions = append(validActions, mahjong.OperatePass)
-	}
-	return validActions
-}
-
-// sigmoid 辅助函数，将Q值转换为置信度
-func sigmoid(x float32) float32 {
-	return 1.0 / (1.0 + float32(math.Exp(float64(-x))))
-}
-
-// recordActionHistory 记录操作历史用于终局奖励计算
-func (ai *RichAI) recordActionHistory(operate int, tileIndex int, feat *RichFeature) {
-	ai.mu.Lock()
-	defer ai.mu.Unlock()
-
-	obs := feat.ToVector()
-	qValues := ai.net.Forward(obs)
-
-	record := ActionRecord{
-		Operate:   operate,
-		TileIndex: tileIndex,
-		Obs:       obs,
-		QValues:   qValues,
-		Feature:   feat,
-		TimeStep:  ai.steps,
-	}
-	ai.history = append(ai.history, record)
-}
-
-// calculateStepReward 计算单步操作的奖励
-func (ai *RichAI) calculateStepReward(record ActionRecord) float32 {
-	var r float32
-	switch record.Operate {
-	case mahjong.OperateDiscard:
-		// 打牌reward：牌效 + 危险度
-		oldHand := record.Feature.Hand
-		newHand := oldHand
-		newHand[record.TileIndex]--
-		effi := EffiReward(oldHand, newHand, 0) // lack 占位
-		danger := 0.0
-		for _, d := range DangerMask(record.Feature, 0) {
-			if !d {
-				danger += 0.02
-			}
-		}
-		r = effi - float32(danger)
-
-	case mahjong.OperateHu:
-		// 胡牌reward：固定高奖励
-		r = 1.0
-
-	case mahjong.OperatePon, mahjong.OperateKon:
-		// 碰/杠reward：基于牌的价值
-		r = float32(0.5 + 0.1*float64(record.QValues[record.TileIndex]))
-
-	case mahjong.OperatePass:
-		// 过牌reward：保守的负奖励
-		r = -0.3
-	}
-	return r
+	return ai.net.Forward(newObs)
 }
 
 // GameEndUpdate 终局奖励更新（修改为累计奖励）
-func (ai *RichAI) GameEndUpdate(finalObs []float32, isWin bool, finalScore float32) {
-	if !ai.learnable {
+func (ai *RichAI) GameEndUpdate(finalState *GameState, isWin bool, finalScore float32) {
+	if !ai.learnable && !isWin {
 		return
 	}
 
 	ai.mu.Lock()
 	defer ai.mu.Unlock()
 
-	// 计算累计奖励：终局奖励 + 所有历史操作奖励
-	totalReward := float32(0.0)
-
-	// 终局基础奖励
-	if isWin {
-		totalReward += 1.0
-	} else {
-		totalReward -= 1.0
-	}
-	// 根据最终得分调整奖励
-	totalReward += finalScore * 0.1
-
 	// 计算所有历史操作的奖励并累加
-	for _, record := range ai.history {
-		stepReward := ai.calculateStepReward(record)
-		totalReward += stepReward
-		log.Printf("Step %d reward: %.2f (operate: %d, tile: %d)",
-			record.TimeStep, stepReward, record.Operate, record.TileIndex)
+	for _, record := range finalState.ActionHistory {
+		// 无论输赢，都将每步结果更新到经验回放库
+		obs := record.Feature.ToVector()
+		target := make([]float32, 34)
+		for i := range target {
+			target[i] = 1.0
+		}
+		ai.per.Add(obs, target, 1.0)
 	}
 
+	// 根据最终得分调整奖励
+	totalReward := 1.0 + finalScore*0.1
+
+	// 转换最终状态为特征向量
+	finalFeat := finalState.ToRichFeature()
+	finalObs := finalFeat.ToVector()
 	// 获取当前状态的Q值
 	qValues := ai.net.Forward(finalObs)
 
-	// 创建目标Q值，所有动作都给予累计奖励
+	// 创建目标Q值，基于当前Q值但用累计奖励更新实际执行的动作
 	target := make([]float32, 34)
+	copy(target, qValues) // 首先复制当前Q值
+
+	// 对于历史记录中的每个操作，用累计奖励更新对应的target
+	for _, record := range finalState.ActionHistory {
+		if record.TileIndex >= 0 && record.TileIndex < 34 {
+			target[record.TileIndex] = totalReward
+		}
+	}
+
+	// 计算平均TD误差用于优先级排序
+	tdErr := float32(0)
+	count := 0
 	for i := range target {
-		target[i] = totalReward
+		if target[i] != qValues[i] { // 只计算被更新的动作
+			tdErr += float32(math.Abs(float64(target[i] - qValues[i])))
+			count++
+		}
+	}
+	if count > 0 {
+		tdErr /= float32(count)
 	}
 
 	// 存储到经验回放池
-	tdErr := totalReward - qValues[0]
-	ai.per.Add(finalObs, target, float64(math.Abs(float64(tdErr))))
-
-	// 清空历史记录
-	ai.history = nil
-
-	log.Printf("Game end update: isWin=%v, score=%.1f, total_reward=%.2f, steps=%d",
-		isWin, finalScore, totalReward, len(ai.history))
+	ai.per.Add(finalObs, target, float64(tdErr))
 }
 
 // NotifyGameResult 通知游戏结果（公开接口）
@@ -386,12 +268,8 @@ func (ai *RichAI) NotifyGameResult(finalState *GameState, isWin bool, finalScore
 		return
 	}
 
-	// 转换最终状态为特征向量
-	finalFeat := finalState.ToRichFeature()
-	finalObs := finalFeat.ToVector()
-
 	// 调用终局奖励更新
-	ai.GameEndUpdate(finalObs, isWin, finalScore)
+	ai.GameEndUpdate(finalState, isWin, finalScore)
 
 	log.Printf("Game result notified: isWin=%v, score=%.1f", isWin, finalScore)
 }

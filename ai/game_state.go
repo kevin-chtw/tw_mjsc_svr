@@ -1,34 +1,60 @@
 package ai
 
-import "github.com/kevin-chtw/tw_common/gamebase/mahjong"
+import (
+	"time"
+
+	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
+)
+
+// ActionRecord 记录每一步操作
+type ActionRecord struct {
+	Operate   int
+	TileIndex int
+	Obs       []float32
+	QValues   []float32
+	Feature   *RichFeature
+	TimeStep  int
+}
 
 // GameState 小型状态快照
 type GameState struct {
-	Operates    *mahjong.Operates       // 可执行操作
-	CurrentSeat int                     // 当前玩家座位号（0-3）
-	TotalTiles  int                     // 总牌张数
-	SelfTurn    bool                    // 是否自己回合
-	LastTile    mahjong.Tile            // 最近打出的牌
-	Hand        map[mahjong.Tile]int    // 手牌（牌->数量）
-	PonTiles    map[int][]mahjong.Tile  // 碰牌信息（玩家ID->碰的牌列表）
-	GangTiles   map[int][]mahjong.Tile  // 杠牌信息（玩家ID->杠的牌列表）
-	HuTiles     map[int]mahjong.Tile    // 胡牌信息（玩家ID->胡的牌）
-	PlayerLacks [4]mahjong.EColor       // 四个玩家的缺门花色
-	PlayerMelds [4]map[mahjong.Tile]int // 各玩家的副露（座位号->牌->数量）
-	HuPlayers   []int                   // 胡牌玩家ID列表
+	Operates      *mahjong.Operates       // 可执行操作
+	CurrentSeat   int                     // 当前玩家座位号（0-3）
+	TotalTiles    int                     // 总牌张数
+	SelfTurn      bool                    // 是否自己回合
+	LastTile      mahjong.Tile            // 最近打出的牌
+	Hand          map[mahjong.Tile]int    // 手牌（牌->数量）
+	PonTiles      map[int][]mahjong.Tile  // 碰牌信息（玩家ID->碰的牌列表）
+	KonTiles      map[int][]mahjong.Tile  // 杠牌信息（玩家ID->杠的牌列表）
+	HuTiles       map[int]mahjong.Tile    // 胡牌信息（玩家ID->胡的牌）
+	PlayerLacks   [4]mahjong.EColor       // 四个玩家的缺门花色
+	PlayerMelds   [4]map[mahjong.Tile]int // 各玩家的副露（座位号->牌->数量）
+	HuPlayers     []int                   // 胡牌玩家ID列表
+	ActionHistory []ActionRecord          // 操作历史记录
 }
 
 func NewGameState() *GameState {
 	return &GameState{
-		TotalTiles:  136,
-		Operates:    mahjong.NewOperates(int32(mahjong.OperateNone)),
-		Hand:        make(map[mahjong.Tile]int),
-		PonTiles:    make(map[int][]mahjong.Tile),
-		GangTiles:   make(map[int][]mahjong.Tile),
-		HuTiles:     make(map[int]mahjong.Tile),
-		PlayerMelds: [4]map[mahjong.Tile]int{},
-		HuPlayers:   []int{},
+		TotalTiles:    136,
+		Operates:      mahjong.NewOperates(int32(mahjong.OperateNone)),
+		Hand:          make(map[mahjong.Tile]int),
+		PonTiles:      make(map[int][]mahjong.Tile),
+		KonTiles:      make(map[int][]mahjong.Tile),
+		HuTiles:       make(map[int]mahjong.Tile),
+		PlayerMelds:   [4]map[mahjong.Tile]int{},
+		HuPlayers:     []int{},
+		ActionHistory: []ActionRecord{},
 	}
+}
+
+// RecordAction 记录操作历史
+func (s *GameState) RecordAction(operate int, tile mahjong.Tile) {
+	record := ActionRecord{
+		Operate:   operate,
+		TileIndex: mahjong.ToIndex(tile),
+		TimeStep:  int(time.Now().UnixNano()),
+	}
+	s.ActionHistory = append(s.ActionHistory, record)
 }
 
 func (s *GameState) ToRichFeature() *RichFeature {
@@ -69,7 +95,7 @@ func (s *GameState) ToRichFeature() *RichFeature {
 	}
 
 	// 杠牌信息
-	for seat, tiles := range s.GangTiles {
+	for seat, tiles := range s.KonTiles {
 		if seat >= 0 && seat < 4 {
 			for _, tile := range tiles {
 				r.GangInfo[seat][mahjong.ToIndex(tile)] = 1.0
@@ -79,7 +105,7 @@ func (s *GameState) ToRichFeature() *RichFeature {
 
 	// 胡牌信息
 	for seat, tile := range s.HuTiles {
-		if seat >= 0 && seat < 4 {
+		if tile > 0 && seat >= 0 && seat < 4 {
 			r.HuInfo[seat][mahjong.ToIndex(tile)] = 1.0
 		}
 	}
