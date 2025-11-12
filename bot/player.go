@@ -265,6 +265,9 @@ func (p *Player) discardAck(msg proto.Message) error {
 		p.gameState.Hand[mahjong.Tile(ack.Tile)]--
 	}
 
+	// 记录实现操作（出牌）
+	p.gameState.RecordExecutedAction(int(ack.Seat), mahjong.OperateDiscard, mahjong.Tile(ack.Tile))
+
 	return nil
 }
 
@@ -283,6 +286,7 @@ func (p *Player) huAck(msg proto.Message) error {
 	ack := msg.(*pbmj.MJHuAck)
 	for _, h := range ack.HuData {
 		p.gameState.HuPlayers = append(p.gameState.HuPlayers, int(h.Seat))
+		p.gameState.RecordExecutedAction(int(h.Seat), mahjong.OperateHu, mahjong.Tile(ack.Tile))
 	}
 	return nil
 }
@@ -293,6 +297,8 @@ func (p *Player) konAck(msg proto.Message) error {
 	if ack.Seat == int32(p.gameState.CurrentSeat) {
 		p.gameState.Hand[mahjong.Tile(ack.Tile)] = 0
 	}
+	// 记录实现操作（杠牌）
+	p.gameState.RecordExecutedAction(int(ack.Seat), mahjong.OperateKon, mahjong.Tile(ack.Tile))
 	return nil
 }
 func (p *Player) ponAck(msg proto.Message) error {
@@ -301,6 +307,8 @@ func (p *Player) ponAck(msg proto.Message) error {
 	if ack.Seat == int32(p.gameState.CurrentSeat) {
 		p.gameState.Hand[mahjong.Tile(ack.Tile)] -= 2
 	}
+	// 记录实现操作（碰牌）
+	p.gameState.RecordExecutedAction(int(ack.Seat), mahjong.OperatePon, mahjong.Tile(ack.Tile))
 	return nil
 }
 

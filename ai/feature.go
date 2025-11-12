@@ -1,5 +1,14 @@
 package ai
 
+const (
+	// HistorySteps 历史操作序列长度（最大100步，包含所有玩家的操作）
+	HistorySteps = 100
+	// HistoryStepDim 每步操作编码维度：操作类型(5) + 玩家座位(4) + 牌索引(34) = 43
+	HistoryStepDim = 5 + 4 + 34
+	// HistoryDim 历史操作序列总维度
+	HistoryDim = HistorySteps * HistoryStepDim
+)
+
 // RichFeature 精简特征（专注于核心信息）
 type RichFeature struct {
 	Hand          [34]float32    // 34 - 手牌
@@ -12,13 +21,14 @@ type RichFeature struct {
 	CurrentSeat   [4]float32     // 4 - 当前玩家座位号（one-hot编码）
 	TotalTiles    float32        // 1 - 总牌张数（归一化）
 	Operates      [5]float32     // 5 - 当前可执行操作（one-hot编码）
+	ActionHistory [HistoryDim]float32 // 历史操作序列（最多100步，每步43维：操作类型5+玩家座位4+牌索引34）
 }
 
 // ToVector flatten → []float32 精简特征向量
 func (f RichFeature) ToVector() []float32 {
-	// 计算新特征维度: 34 + 136 + 408 + 21 + 5 = 604
-	// 手牌(34) + 副露(4×34=136) + 碰杠胡(3×4×34=408) + 玩家状态(4+12+4+1=21) + 操作(5)
-	out := make([]float32, 0, 604)
+	// 计算新特征维度: 604 + 4300 = 4904
+	// 基础特征(604) + 历史操作序列(100×43=4300)
+	out := make([]float32, 0, 604+HistoryDim)
 
 	// 手牌和副露特征 (34 + 136 = 170)
 	out = append(out, f.Hand[:]...) // 34
@@ -43,6 +53,9 @@ func (f RichFeature) ToVector() []float32 {
 
 	// 操作特征 (5)
 	out = append(out, f.Operates[:]...) // 5
+
+	// 历史操作序列 (4300)
+	out = append(out, f.ActionHistory[:]...) // 100×43 = 4300
 
 	return out
 }

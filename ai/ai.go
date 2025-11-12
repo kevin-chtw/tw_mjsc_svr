@@ -30,7 +30,7 @@ func GetRichAI(learnable bool) *RichAI {
 			per:       NewPER(20000),
 			learnable: learnable,
 		}
-		loadWeights(inst.net, "rich_dqn.gob")
+		loadWeights(inst.net, "tw_mjsc_svr.gob")
 	})
 	return inst
 }
@@ -60,49 +60,73 @@ func loadWeights(net *DQNet, path string) error {
 		return err
 	}
 	for _, n := range net.learnables {
-		gorgonia.Let(n, tensor.New(tensor.WithShape(n.Shape()...), tensor.WithBacking(w[n.Name()])))
+		weightData, exists := w[n.Name()]
+		if !exists {
+			logger.Log.Warnf("Weight %s not found in file, using random initialization", n.Name())
+			continue
+		}
+		expectedSize := 1
+		for _, dim := range n.Shape() {
+			expectedSize *= dim
+		}
+		if len(weightData) != expectedSize {
+			logger.Log.Warnf("Weight %s shape mismatch. Expected %d elements, got %d. Using random initialization", n.Name(), expectedSize, len(weightData))
+			continue
+		}
+		if err := gorgonia.Let(n, tensor.New(tensor.WithShape(n.Shape()...), tensor.WithBacking(weightData))); err != nil {
+			logger.Log.Warnf("Failed to load weight %s: %v. Using random initialization", n.Name(), err)
+			continue
+		}
 	}
 	return nil
 }
 
-// Decision 统一决策结果
+// Decision 统一决策结果和决策记录
 type Decision struct {
-	Operate int          `json:"operate"` // mahjong.Operate 类型
-	Tile    mahjong.Tile `json:"tile"`    // 牌值
-	QValue  float32      `json:"q_value"` // 决策Q值
+	Operate int          `json:"operate"`       // mahjong.Operate 类型
+	Tile    mahjong.Tile `json:"tile"`          // 牌值
+	QValue  float32      `json:"q_value"`       // 决策Q值（用于选择最佳决策）
+	Obs     []float32    `json:"obs,omitempty"` // 操作时的状态特征（用于训练，可选）
 }
 
 // Step 统一决策入口 - 外部传入可行操作和局面
 func (ai *RichAI) Step(state *GameState) *Decision {
-	d := &Decision{
-		QValue: -1e9,
+	var bestD *Decision
+
+	// 辅助函数：更新最佳决策
+	updateBest := func(d *Decision) {
+		if d != nil && (bestD == nil || d.QValue > bestD.QValue) {
+			bestD = d
+		}
 	}
 
 	if state.Operates.HasOperate(mahjong.OperateDiscard) {
-		d = ai.discard(state, d)
+		updateBest(ai.discard(state))
 	}
 
 	if state.Operates.HasOperate(mahjong.OperateHu) {
-		d = ai.hu(state, d)
+		updateBest(ai.hu(state))
 	}
 	if state.Operates.HasOperate(mahjong.OperatePon) {
-		d = ai.pon(state, d)
+		updateBest(ai.pon(state))
 	}
 	if state.Operates.HasOperate(mahjong.OperateKon) {
-		d = ai.kon(state, d)
+		updateBest(ai.kon(state))
 	}
 	if state.Operates.HasOperate(mahjong.OperatePass) {
-		d = ai.pass(state, d)
+		updateBest(ai.pass(state))
 	}
 
-	if ai.learnable && d.Operate != int(mahjong.OperateNone) {
-		state.RecordAction(d.Operate, d.Tile)
+	if ai.learnable && bestD != nil && bestD.Operate != int(mahjong.OperateNone) {
+		state.RecordAction(bestD.Operate, bestD.Tile)
 	}
 
-	return d
+	return bestD
 }
 
-func (ai *RichAI) discard(state *GameState, d *Decision) *Decision {
+func (ai *RichAI) discard(state *GameState) *Decision {
+	var bestD *Decision
+
 	for tile, count := range state.Hand {
 		if count <= 0 {
 			continue
@@ -127,18 +151,18 @@ func (ai *RichAI) discard(state *GameState, d *Decision) *Decision {
 		state.Hand[tile]++
 		state.PlayerMelds[state.CurrentSeat][tile]--
 
-		if value > d.QValue {
-			d = &Decision{
+		if bestD == nil || value > bestD.QValue {
+			bestD = &Decision{
 				Operate: mahjong.OperateDiscard,
 				Tile:    tile,
 				QValue:  value,
 			}
 		}
 	}
-	return d
+	return bestD
 }
 
-func (ai *RichAI) hu(state *GameState, d *Decision) *Decision {
+func (ai *RichAI) hu(state *GameState) *Decision {
 	state.HuTiles[state.CurrentSeat] = state.LastTile
 	state.HuPlayers = append(state.HuPlayers, state.CurrentSeat)
 
@@ -147,17 +171,14 @@ func (ai *RichAI) hu(state *GameState, d *Decision) *Decision {
 	state.HuTiles[state.CurrentSeat] = mahjong.TileNull
 	state.HuPlayers = state.HuPlayers[:len(state.HuPlayers)-1]
 
-	if value > d.QValue {
-		d = &Decision{
-			Operate: mahjong.OperateHu,
-			Tile:    state.LastTile,
-			QValue:  value,
-		}
+	return &Decision{
+		Operate: mahjong.OperateHu,
+		Tile:    state.LastTile,
+		QValue:  value,
 	}
-	return d
 }
 
-func (ai *RichAI) pon(state *GameState, d *Decision) *Decision {
+func (ai *RichAI) pon(state *GameState) *Decision {
 	state.PonTiles[state.CurrentSeat] = append(state.PonTiles[state.CurrentSeat], state.LastTile)
 	state.Hand[state.LastTile] -= 2
 
@@ -166,17 +187,14 @@ func (ai *RichAI) pon(state *GameState, d *Decision) *Decision {
 	state.PonTiles[state.CurrentSeat] = state.PonTiles[state.CurrentSeat][:len(state.PonTiles[state.CurrentSeat])-1]
 	state.Hand[state.LastTile] += 2
 
-	if value > d.QValue {
-		d = &Decision{
-			Operate: mahjong.OperatePon,
-			Tile:    state.LastTile,
-			QValue:  value,
-		}
+	return &Decision{
+		Operate: mahjong.OperatePon,
+		Tile:    state.LastTile,
+		QValue:  value,
 	}
-	return d
 }
 
-func (ai *RichAI) kon(state *GameState, d *Decision) *Decision {
+func (ai *RichAI) kon(state *GameState) *Decision {
 	tile := state.LastTile
 	if state.Hand[tile] != 4 && !slices.Contains(state.PonTiles[state.CurrentSeat], tile) {
 		for t, c := range state.Hand {
@@ -197,26 +215,20 @@ func (ai *RichAI) kon(state *GameState, d *Decision) *Decision {
 	state.KonTiles[state.CurrentSeat] = state.KonTiles[state.CurrentSeat][:len(state.KonTiles[state.CurrentSeat])-1]
 	state.Hand[tile] += count
 
-	if value > d.QValue {
-		d = &Decision{
-			Operate: mahjong.OperateKon,
-			Tile:    tile,
-			QValue:  value,
-		}
+	return &Decision{
+		Operate: mahjong.OperateKon,
+		Tile:    tile,
+		QValue:  value,
 	}
-	return d
 }
 
-func (ai *RichAI) pass(state *GameState, d *Decision) *Decision {
+func (ai *RichAI) pass(state *GameState) *Decision {
 	value := ai.evaluateState(state)
-	if value > d.QValue {
-		d = &Decision{
-			Operate: mahjong.OperatePass,
-			Tile:    mahjong.TileNull,
-			QValue:  value,
-		}
+	return &Decision{
+		Operate: mahjong.OperatePass,
+		Tile:    mahjong.TileNull,
+		QValue:  value,
 	}
-	return d
 }
 
 func (ai *RichAI) evaluateState(state *GameState) float32 {
@@ -253,13 +265,13 @@ func (ai *RichAI) GameEndUpdate(finalState *GameState, isWin bool, finalScore fl
 	finalObs := finalFeat.ToVector()
 	finalQValues := ai.net.Forward(finalObs)
 
-	// 3. 逆序遍历历史，逐步回传奖励（蒙特卡洛回溯）
-	for i := len(finalState.ActionHistory) - 1; i >= 0; i-- {
-		rec := &finalState.ActionHistory[i]
+	// 3. 逆序遍历决策历史，逐步回传奖励（蒙特卡洛回溯）
+	for i := len(finalState.DecisionHistory) - 1; i >= 0; i-- {
+		decisionRec := finalState.DecisionHistory[i]
 
 		// 3.1 中间动作奖励
 		stepReward := baseReward
-		switch rec.Operate {
+		switch decisionRec.Operate {
 		case mahjong.OperateHu:
 			stepReward += 0.1
 		case mahjong.OperateKon:
@@ -269,7 +281,7 @@ func (ai *RichAI) GameEndUpdate(finalState *GameState, isWin bool, finalScore fl
 		}
 
 		// 3.2 当前状态 Q 值（主网络）
-		currQ := ai.net.Forward(rec.Obs)
+		currQ := ai.net.Forward(decisionRec.Obs)
 
 		// 3.3 TD 目标：r + γ * max_a' Q_target(s', a')
 		γ := float32(0.99)
@@ -283,19 +295,40 @@ func (ai *RichAI) GameEndUpdate(finalState *GameState, isWin bool, finalScore fl
 
 		// 3.4 只更新实际执行的动作
 		target := make([]float32, 137)
-		copy(target, currQ)                                        // 其余动作保持不变
-		target[actionIndex(rec.Operate, rec.TileIndex)] = tdTarget // 仅更新本动作
+		copy(target, currQ) // 其余动作保持不变
 
-		// 3.5 TD 误差
-		tdErr := float32(math.Abs(float64(tdTarget - currQ[rec.TileIndex])))
+		// 计算动作索引
+		var actionIdx int
+		if decisionRec.Operate == mahjong.OperatePass {
+			// Pass 操作使用固定索引 136
+			actionIdx = 136
+		} else {
+			// 检查 Tile 是否有效
+			if !decisionRec.Tile.IsValid() {
+				logger.Log.Warnf("Invalid tile in decision record: operate=%d, tile=%d, skipping", decisionRec.Operate, decisionRec.Tile)
+				continue
+			}
+			tileIdx := mahjong.ToIndex(decisionRec.Tile)
+			actionIdx = actionIndex(decisionRec.Operate, tileIdx)
+		}
+
+		if actionIdx < 0 || actionIdx >= 137 {
+			logger.Log.Warnf("Invalid action index: %d, skipping", actionIdx)
+			continue
+		}
+
+		target[actionIdx] = tdTarget // 仅更新本动作
+
+		// 3.5 TD 误差（使用 actionIdx 对应的 Q 值）
+		tdErr := float32(math.Abs(float64(tdTarget - currQ[actionIdx])))
 
 		// 3.6 存入 PER
-		ai.per.Add(rec.Obs, target, float64(tdErr))
+		ai.per.Add(decisionRec.Obs, target, float64(tdErr))
 	}
 
 	// 4. 立即训练一次
 	states, targets := ai.per.Sample()
 	loss := ai.net.Train(states, targets)
 	logger.Log.Infof("GameEndUpdate, loss=%.6f", loss)
-	saveWeights(ai.net, "rich_dqn.gob")
+	saveWeights(ai.net, "tw_mjsc_svr.gob")
 }
