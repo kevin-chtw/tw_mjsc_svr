@@ -10,7 +10,6 @@ import (
 	"github.com/kevin-chtw/tw_mjsc_svr/bot"
 	"github.com/kevin-chtw/tw_mjsc_svr/mjsc"
 	"github.com/kevin-chtw/tw_proto/sproto"
-	"github.com/sirupsen/logrus"
 	pitaya "github.com/topfreegames/pitaya/v3/pkg"
 	"github.com/topfreegames/pitaya/v3/pkg/config"
 	"github.com/topfreegames/pitaya/v3/pkg/logger"
@@ -22,7 +21,7 @@ var app pitaya.Pitaya
 func main() {
 
 	serverType := utils.MJSC
-	pitaya.SetLogger(utils.Logger(logrus.InfoLevel))
+	//pitaya.SetLogger(utils.Logger(logrus.InfoLevel))
 
 	config := config.NewDefaultPitayaConfig()
 	config.SerializerType = uint16(serialize.PROTOBUF)

@@ -47,12 +47,8 @@ func (p *PER) Add(state, target []float32, tdErr float64) {
 	heap.Push(&p.pq, exp)
 }
 
-func (p *PER) Sample(batch int) (states, targets [][]float32) {
-	n := len(p.pq)
-	if n < batch {
-		batch = n
-	}
-	for i := 0; i < batch; i++ {
+func (p *PER) Sample() (states, targets [][]float32) {
+	for i := 0; i < len(p.pq); i++ {
 		exp := heap.Pop(&p.pq).(*experience)
 		states = append(states, exp.state)
 		targets = append(targets, exp.target)

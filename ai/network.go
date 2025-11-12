@@ -1,116 +1,226 @@
 package ai
 
 import (
+	"fmt"
+	"strconv"
+
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
 	"gorgonia.org/gorgonia"
 	"gorgonia.org/tensor"
 )
 
 const (
-	inputDim  = 604 // 匹配 RichFeature.ToVector() 的实际输出长度
-	outputDim = 134
-	batchSize = 32
-	tau       = 0.01
+	inputDim  = 604
+	outputDim = 137
 )
 
+// DQNet 网络结构定义
 type DQNet struct {
 	g          *gorgonia.ExprGraph
 	input      *gorgonia.Node
-	targetQ    *gorgonia.Node
-	fcW        *gorgonia.Node
 	qVals      *gorgonia.Node
+	targetQ    *gorgonia.Node
 	loss       *gorgonia.Node
-	learnables []*gorgonia.Node
-	vm         gorgonia.VM
+	learnables gorgonia.Nodes
 	solver     gorgonia.Solver
+	vm         gorgonia.VM
 }
 
+// 创建 DQNet 实例
 func NewDQNet() *DQNet {
 	g := gorgonia.NewGraph()
+	input := gorgonia.NewMatrix(g, tensor.Float32, gorgonia.WithShape(1, inputDim), gorgonia.WithName("input"))
+	qVals := buildResNet18(g, input, outputDim)
 
-	// 构建图时同时放占位 tensor
-	placeholderIn := tensor.New(tensor.WithShape(batchSize, inputDim), tensor.WithBacking(make([]float32, batchSize*inputDim)))
-	placeholderTgt := tensor.New(tensor.WithShape(batchSize, outputDim), tensor.WithBacking(make([]float32, batchSize*outputDim)))
-
-	input := gorgonia.NewMatrix(g, tensor.Float32, gorgonia.WithShape(batchSize, inputDim), gorgonia.WithValue(placeholderIn))
-	targetQ := gorgonia.NewMatrix(g, tensor.Float32, gorgonia.WithShape(batchSize, outputDim), gorgonia.WithValue(placeholderTgt))
-
-	// 单层权重矩阵
-	fcW := gorgonia.NewMatrix(g, tensor.Float32, gorgonia.WithShape(inputDim, outputDim), gorgonia.WithInit(gorgonia.GlorotN(1.0)))
-
-	// 简单线性变换
-	qVals := gorgonia.Must(gorgonia.Mul(input, fcW))
-
-	// loss: MSE
+	targetQ := gorgonia.NewMatrix(g, tensor.Float32, gorgonia.WithShape(1, outputDim), gorgonia.WithName("targetQ"))
 	diff := gorgonia.Must(gorgonia.Sub(qVals, targetQ))
-	loss := gorgonia.Must(gorgonia.Mean(diff))
+	loss := gorgonia.Must(gorgonia.Mean(gorgonia.Must(gorgonia.Square(diff))))
 
-	// Adam
-	solver := gorgonia.NewAdamSolver(
-		gorgonia.WithLearnRate(0.001),
-		gorgonia.WithBeta1(0.9),
-		gorgonia.WithBeta2(0.999),
-		gorgonia.WithEps(1e-8),
-	)
-	learnables := []*gorgonia.Node{fcW}
-	vm := gorgonia.NewTapeMachine(g, gorgonia.BindDualValues(learnables...))
+	// 收集所有可训练参数（conv/fc 的 W 与 B）
+	var learnables gorgonia.Nodes
+	for _, n := range g.AllNodes() {
+		if n.Op() == nil && len(n.Shape()) > 0 &&
+			(n.Name() == "" || n.Name()[len(n.Name())-1] == 'w' || n.Name()[len(n.Name())-1] == 'b') {
+			learnables = append(learnables, n)
+		}
+	}
+	solver := gorgonia.NewAdamSolver(gorgonia.WithLearnRate(1e-3))
 
 	return &DQNet{
 		g:          g,
 		input:      input,
-		targetQ:    targetQ,
-		fcW:        fcW,
 		qVals:      qVals,
+		targetQ:    targetQ,
 		loss:       loss,
 		learnables: learnables,
-		vm:         vm,
 		solver:     solver,
+		vm:         gorgonia.NewTapeMachine(g),
 	}
 }
 
-// Forward 单样本
+// 用于模型前向传播
 func (net *DQNet) Forward(x []float32) []float32 {
-	// 创建新 tensor
 	inTensor := tensor.New(tensor.WithShape(1, inputDim), tensor.WithBacking(x))
-
-	// 使用 gorgonia.Let 绑定输入值
-	gorgonia.Let(net.input, inTensor)
-
+	if err := gorgonia.Let(net.input, inTensor); err != nil {
+		logger.Log.Infof("Let failed: %v", err)
+		return make([]float32, outputDim)
+	}
+	if err := gorgonia.Let(net.targetQ, tensor.New(
+		tensor.WithShape(1, outputDim),
+		tensor.WithBacking(make([]float32, outputDim)))); err != nil {
+		logger.Log.Infof("Let targetQ patch failed: %v", err)
+		return make([]float32, outputDim)
+	}
 	net.vm.Reset()
 	if err := net.vm.RunAll(); err != nil {
-		panic(err)
+		logger.Log.Infof("RunAll failed: %v", err)
+		return make([]float32, outputDim)
 	}
-
-	// 获取输出值
-	output := net.qVals.Value()
-	if output == nil {
-		panic("qVals value is nil")
-	}
-
-	return output.Data().([]float32)
+	return net.qVals.Value().Data().([]float32)
 }
 
-// Train 一次 batch
+// 用于模型训练
 func (net *DQNet) Train(states [][]float32, targets [][]float32) float32 {
-	// 使用 gorgonia.Let 绑定输入值
-	gorgonia.Let(net.input, tensor.New(tensor.WithShape(batchSize, inputDim), tensor.WithBacking(flattenF32(states))))
-	gorgonia.Let(net.targetQ, tensor.New(tensor.WithShape(batchSize, outputDim), tensor.WithBacking(flattenF32(targets))))
-
-	net.vm.Reset()
-	if err := net.vm.RunAll(); err != nil {
-		panic(err)
+	batch := len(states)
+	if batch == 0 {
+		return 0
 	}
-	lossVal := net.loss.Value().Data().(float32)
-	net.vm.Reset()
-	// 将 *Node 转换为 ValueGrad
-	valueGrads := gorgonia.NodesToValueGrads(net.learnables)
-	net.solver.Step(valueGrads)
-	return lossVal
+	var (
+		totalLoss float32
+		success   int
+	)
+	for i := 0; i < batch; i++ {
+		if err := gorgonia.Let(net.input, tensor.New(
+			tensor.WithShape(1, inputDim),
+			tensor.WithBacking(states[i]),
+		)); err != nil {
+			logger.Log.Errorf("Let input failed: %v", err)
+			continue
+		}
+		if err := gorgonia.Let(net.targetQ, tensor.New(
+			tensor.WithShape(1, outputDim),
+			tensor.WithBacking(targets[i]),
+		)); err != nil {
+			logger.Log.Errorf("Let targetQ failed: %v", err)
+			continue
+		}
+		net.vm.Reset()
+		if err := net.vm.RunAll(); err != nil {
+			logger.Log.Errorf("VM Run failed: %v", err)
+			continue
+		}
+		if lossVal, ok := net.loss.Value().Data().(float32); ok {
+			totalLoss += lossVal
+			success++
+		}
+	}
+	if success == 0 {
+		return 0
+	}
+	return totalLoss / float32(success)
 }
 
-func flattenF32(x [][]float32) []float32 {
-	var out []float32
-	for _, row := range x {
-		out = append(out, row...)
+// ResNet-18 架构实现
+func buildResNet18(g *gorgonia.ExprGraph, input *gorgonia.Node, classNum int) *gorgonia.Node {
+	// 输入：(B, 604) → reshape 成 (B,1,604,1) 给 4D 卷积用
+	h := gorgonia.Must(gorgonia.Reshape(input, []int{-1, 1, inputDim, 1})) // 这里是 reshape
+
+	// 调试输出形状
+	logger.Log.Infof("After Reshape, shape: %v", h.Shape())
+
+	h = conv2d(g, h, 64, 1, 1, 1, 1, 0, 0, "conv1") // 修改卷积核大小为 1x1
+	h = relu(h)
+
+	// 4 stages（各 2 个 BasicBlock，第一个 block stride=2 宽度方向下采样）
+	h = makeLayer(g, h, 64, 2, 1, "layer1")
+	h = makeLayer(g, h, 128, 2, 2, "layer2")
+	h = makeLayer(g, h, 256, 2, 2, "layer3")
+	h = makeLayer(g, h, 512, 2, 2, "layer4")
+
+	// 调试输出每一层卷积后的形状
+	logger.Log.Infof("After layer4, shape: %v", h.Shape())
+
+	// GlobalAveragePool
+	h = gorgonia.Must(gorgonia.Mean(h, 2))
+	h = gorgonia.Must(gorgonia.Mean(h, 2))
+
+	// 调试输出池化后的形状
+	logger.Log.Infof("After GlobalAveragePool, shape: %v", h.Shape())
+
+	// 全连接层，输出 137 个类别
+	wFC := gorgonia.NewMatrix(g, tensor.Float32, gorgonia.WithShape(512, classNum),
+		gorgonia.WithName("fc_w"), gorgonia.WithInit(gorgonia.GlorotN(1.0)))
+	return gorgonia.Must(gorgonia.Mul(h, wFC))
+}
+
+func conv2d(g *gorgonia.ExprGraph, x *gorgonia.Node, outCh, kH, kW, strideH, strideW, padH, padW int, name string) *gorgonia.Node {
+	inCh := int(x.Shape()[1])
+
+	filter := gorgonia.NewTensor(g, tensor.Float32, 4,
+		gorgonia.WithShape(outCh, inCh, kH, kW),
+		gorgonia.WithName(name+"_w"),
+		gorgonia.WithInit(gorgonia.GlorotN(1.0)))
+
+	result := gorgonia.Must(gorgonia.Conv2d(x, filter,
+		tensor.Shape{kH, kW},
+		[]int{padH, padW},
+		[]int{strideH, strideW},
+		[]int{1, 1}))
+
+	logger.Log.Infof("After %s, shape: %v", name, result.Shape())
+	return result
+}
+
+// ReLU 激活函数
+func relu(x *gorgonia.Node) *gorgonia.Node {
+	return gorgonia.Must(gorgonia.Rectify(x))
+}
+
+func basicBlock(g *gorgonia.ExprGraph, x *gorgonia.Node, outCh, strideW, strideH int, name string) *gorgonia.Node {
+	// 主路径的卷积操作
+	h := conv2d(g, x, outCh, 3, 1, strideW, 1, 1, 0, name+"_conv1")
+	fmt.Println("Shape after conv1: ", h.Shape())
+	h = relu(h)
+
+	// 第二个卷积操作
+	h = conv2d(g, h, outCh, 3, 1, 1, 1, 1, 0, name+"_conv2")
+	fmt.Println("Shape after conv2: ", h.Shape())
+
+	// 处理 shortcut
+	var short *gorgonia.Node
+	if strideW != 1 || x.Shape()[1] != outCh {
+		short = conv2d(g, x, outCh, 1, 1, strideW, 1, 0, 0, name+"_shortcut")
+		fmt.Println("Shape after shortcut conv: ", short.Shape())
+	} else {
+		short = x
 	}
-	return out
+	// 确保shortcut和主路径形状匹配
+	if short.Shape()[2] != h.Shape()[2] || short.Shape()[3] != h.Shape()[3] {
+		short = gorgonia.Must(gorgonia.Reshape(short, h.Shape()))
+	}
+
+	// 如果 shortcut 和主路径形状不匹配，调整通道数
+	if short.Shape()[1] != h.Shape()[1] {
+		short = conv2d(g, short, h.Shape()[1], 1, 1, 1, 1, 0, 0, name+"_shortcut_conv")
+		fmt.Println("Shape after shortcut conv adjustment: ", short.Shape())
+	}
+
+	// 最终加和
+	output := gorgonia.Must(gorgonia.Add(h, short))
+	fmt.Println("Shape after add: ", output.Shape())
+
+	return output
+}
+
+// 生成多层残差块
+func makeLayer(g *gorgonia.ExprGraph, x *gorgonia.Node, outCh int, blocks int, strideW int, name string) *gorgonia.Node {
+	h := basicBlock(g, x, outCh, strideW, strideW, name+"_blk1")
+	for i := 1; i < blocks; i++ {
+		h = basicBlock(g, h, outCh, 1, 1, name+"_blk"+strconv.Itoa(i+1))
+	}
+
+	// 打印层的输出形状
+	logger.Log.Infof("After %s, shape: %v", name, h.Shape())
+
+	return h
 }

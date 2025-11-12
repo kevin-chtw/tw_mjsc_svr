@@ -1,0 +1,218 @@
+nohup: 忽略输入
+time="2025-11-12T16:08:24+08:00" level=info msg="Pitaya server of type mjsc started" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=info msg="registered remote sys.pushsession" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=info msg="registered remote sys.bindsession" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=info msg="registered remote sys.kick" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=info msg="starting server mjsc:16761c9b-aca9-42b2-99cf-ed77e7f5e4cf" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="initializing all modules" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="initializing module: rpcClient" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="connecting to nats (client) with timeout of 2s" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="initializing module: rpcServer" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="connecting to nats (server) with timeout of 2s" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="initializing module: serviceDiscovery" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=info msg="Initializing ETCD client" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="sd: got leaseID: 694d99f116de6d3a" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="server servers/mjsc/16761c9b-aca9-42b2-99cf-ed77e7f5e4cf added by watcher" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="type: mjsc, servers: map[16761c9b-aca9-42b2-99cf-ed77e7f5e4cf:0xc00023a740]" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="loading info from missing server: account/f7af62b1-ee14-47ff-aca8-b59d00b77aa5" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="loading info from missing server: tourney/77d02348-a2e5-4da3-ba2d-1a7d1f7babf5" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="loading info from missing server: mjhaeb/59850439-65e0-4bc3-ab0e-881d075c134b" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="loading info from missing server: mjsc/ace18665-1269-46b1-be87-6eb0e6f882bb" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="loading info from missing server: fdtable/9b4c7a23-df68-4297-b718-107bd2918fad" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="loading info from missing server: proxy/6f2d1fd4-f57a-491a-bfa4-2666efce761e" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="loading info from missing server: island/e30b4684-df2f-4c98-ba9b-708ac0fdcb81" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="loading info from missing server: mjxl/5eb25bf1-2b2d-4211-ac1e-3e74d83af998" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="adding server &{f7af62b1-ee14-47ff-aca8-b59d00b77aa5 account map[] false localhost.localdomain}" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="adding server &{77d02348-a2e5-4da3-ba2d-1a7d1f7babf5 tourney map[] false localhost.localdomain}" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="adding server &{59850439-65e0-4bc3-ab0e-881d075c134b mjhaeb map[] false localhost.localdomain}" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="adding server &{ace18665-1269-46b1-be87-6eb0e6f882bb mjsc map[] false localhost.localdomain}" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="adding server &{9b4c7a23-df68-4297-b718-107bd2918fad fdtable map[] false localhost.localdomain}" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="adding server &{6f2d1fd4-f57a-491a-bfa4-2666efce761e proxy map[] true localhost.localdomain}" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="adding server &{e30b4684-df2f-4c98-ba9b-708ac0fdcb81 island map[] false localhost.localdomain}" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="adding server &{5eb25bf1-2b2d-4211-ac1e-3e74d83af998 mjxl map[] false localhost.localdomain}" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="type: mjhaeb, servers: map[59850439-65e0-4bc3-ab0e-881d075c134b:0xc00023a900]" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="type: fdtable, servers: map[9b4c7a23-df68-4297-b718-107bd2918fad:0xc00023a940]" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="type: proxy, servers: map[6f2d1fd4-f57a-491a-bfa4-2666efce761e:0xc00007cd00]" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="type: island, servers: map[e30b4684-df2f-4c98-ba9b-708ac0fdcb81:0xc00023a9c0]" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="type: mjxl, servers: map[5eb25bf1-2b2d-4211-ac1e-3e74d83af998:0xc00023aa00]" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="type: mjsc, servers: map[16761c9b-aca9-42b2-99cf-ed77e7f5e4cf:0xc00023a740 ace18665-1269-46b1-be87-6eb0e6f882bb:0xc00007ccc0]" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="type: account, servers: map[f7af62b1-ee14-47ff-aca8-b59d00b77aa5:0xc00007cc00]" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=debug msg="type: tourney, servers: map[77d02348-a2e5-4da3-ba2d-1a7d1f7babf5:0xc00007cc80]" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=info msg="SyncServers took : 3.554525ms to run" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=info msg="module: rpcClient successfully loaded" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=info msg="module: rpcServer successfully loaded" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=info msg="module: serviceDiscovery successfully loaded" source=pitaya
+time="2025-11-12T16:08:24+08:00" level=info msg="all modules started!" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=info msg="uid:\"1\"" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=debug msg="[rpc_client] sending remote nats request for route account.remote.message with timeout of 5s" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=info msg="uid:\"1\" nickname:\"机器人_1719\" avatar:\"/avatars/bot_default.png\" diamond:1000" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=info msg="uid:\"2\"" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=debug msg="[rpc_client] sending remote nats request for route account.remote.message with timeout of 5s" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=info msg="uid:\"2\" nickname:\"机器人_1722\" avatar:\"/avatars/bot_default.png\" diamond:1000 seat:1" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=info msg="uid:\"3\"" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=debug msg="[rpc_client] sending remote nats request for route account.remote.message with timeout of 5s" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=info msg="uid:\"3\" nickname:\"机器人_1722\" avatar:\"/avatars/bot_default.png\" diamond:1000 seat:2" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=info msg="uid:\"4\"" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=debug msg="[rpc_client] sending remote nats request for route account.remote.message with timeout of 5s" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=info msg="uid:\"4\" nickname:\"机器人_1722\" avatar:\"/avatars/bot_default.png\" diamond:1000 seat:3" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=info msg="cur_game_count:1" source=pitaya
+time="2025-11-12T16:08:34+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJGameStartAck\",\"banker\":2,\"tile_count\":108,\"scores\":[\"0\",\"0\",\"0\",\"0\"],\"property\":\"10,8,0,1,10,0,1,1,1,1,1,1,1,1,1,1,0,0,1,0,1\"}}" source=pitaya
+time="2025-11-12T16:08:36+08:00" level=info msg="[81 529 353 305 513 113 529 321 273 513 289 33 641 545]" source=pitaya
+time="2025-11-12T16:08:36+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJOpenDoorAck\",\"tiles\":[353,129,561,129,337,577,385,513,369,385,305,305,337]}}" source=pitaya
+time="2025-11-12T16:08:36+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJOpenDoorAck\",\"seat\":1,\"tiles\":[97,369,273,625,1,353,369,49,385,593,257,369,289]}}" source=pitaya
+time="2025-11-12T16:08:36+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJOpenDoorAck\",\"seat\":2,\"tiles\":[81,529,353,305,513,113,529,321,273,513,289,33,641,545]}}" source=pitaya
+time="2025-11-12T16:08:36+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJOpenDoorAck\",\"seat\":3,\"tiles\":[561,81,577,641,577,257,1,385,81,17,593,1,33]}}" source=pitaya
+time="2025-11-12T16:08:36+08:00" level=info msg="seat=0, map[129:2 305:2 337:2 353:1 369:1 385:2 513:1 561:1 577:1]" source=pitaya
+time="2025-11-12T16:08:36+08:00" level=info msg="seat=1, map[1:1 49:1 97:1 257:1 273:1 289:1 353:1 369:3 385:1 593:1 625:1]" source=pitaya
+time="2025-11-12T16:08:36+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJAnimationAck\",\"requestid\":2}}" source=pitaya
+time="2025-11-12T16:08:36+08:00" level=info msg="seat=2, map[33:1 81:1 113:1 273:1 289:1 305:1 321:1 353:1 513:2 529:2 545:1 641:1]" source=pitaya
+time="2025-11-12T16:08:36+08:00" level=info msg="seat=3, map[1:2 17:1 33:1 81:2 257:1 385:1 561:1 577:2 593:1 641:1]" source=pitaya
+time="2025-11-12T16:08:37+08:00" level=info msg="seat 3 recive msg req:{[type.googleapis.com/pbmj.MJAnimationReq]:{seat:3 requestid:2}}" source=pitaya
+time="2025-11-12T16:08:37+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapTilesAck\",\"requestid\":3}}" source=pitaya
+time="2025-11-12T16:08:37+08:00" level=info msg="seat 0 recive msg req:{[type.googleapis.com/pbmj.MJAnimationReq]:{requestid:2}}" source=pitaya
+time="2025-11-12T16:08:37+08:00" level=info msg="seat 1 recive msg req:{[type.googleapis.com/pbmj.MJAnimationReq]:{seat:1 requestid:2}}" source=pitaya
+time="2025-11-12T16:08:37+08:00" level=info msg="seat 2 recive msg req:{[type.googleapis.com/pbmj.MJAnimationReq]:{seat:2 requestid:2}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat 0 recive msg req:{[type.googleapis.com/pbsc.SCSwapTilesReq]:{requestid:3 tiles:305 tiles:305 tiles:353}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"tiles\":[305,305,353]}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\"}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\"}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\"}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat 1 recive msg req:{[type.googleapis.com/pbsc.SCSwapTilesReq]:{requestid:3 tiles:369 tiles:369 tiles:369}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"seat\":1,\"tiles\":[369,369,369]}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"seat\":1}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"seat\":1}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"seat\":1}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat 2 recive msg req:{[type.googleapis.com/pbsc.SCSwapTilesReq]:{requestid:3 tiles:353 tiles:321 tiles:273}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"seat\":2,\"tiles\":[353,321,273]}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"seat\":2}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"seat\":2}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"seat\":2}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat 3 recive msg req:{[type.googleapis.com/pbsc.SCSwapTilesReq]:{requestid:3 tiles:561 tiles:641 tiles:593}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"seat\":3,\"tiles\":[561,641,593]}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"seat\":3}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"seat\":3}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapFinishAck\",\"seat\":3}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCSwapTilesResultAck\",\"swap_type\":2,\"swap_tiles\":[{\"to\":2,\"tiles\":[305,305,353]},{\"from\":1,\"to\":3,\"tiles\":[369,369,369]},{\"from\":2,\"tiles\":[353,321,273]},{\"from\":3,\"to\":1,\"tiles\":[561,641,593]}]}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJAnimationAck\",\"requestid\":4}}" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat=0, map[129:2 273:1 305:0 321:1 337:2 353:1 369:1 385:2 513:1 561:1 577:1]" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat=1, map[1:1 49:1 97:1 257:1 273:1 289:1 353:1 369:0 385:1 561:1 593:2 625:1 641:1]" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat=2, map[33:1 81:1 113:1 273:0 289:1 305:3 321:0 353:1 513:2 529:2 545:1 641:1]" source=pitaya
+time="2025-11-12T16:08:38+08:00" level=info msg="seat=3, map[1:2 17:1 33:1 81:2 257:1 369:3 385:1 561:0 577:2 593:0 641:0]" source=pitaya
+time="2025-11-12T16:08:39+08:00" level=info msg="seat 2 recive msg req:{[type.googleapis.com/pbmj.MJAnimationReq]:{seat:2 requestid:4}}" source=pitaya
+time="2025-11-12T16:08:39+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueAck\",\"requestid\":5}}" source=pitaya
+time="2025-11-12T16:08:39+08:00" level=info msg="seat 3 recive msg req:{[type.googleapis.com/pbmj.MJAnimationReq]:{seat:3 requestid:4}}" source=pitaya
+time="2025-11-12T16:08:39+08:00" level=info msg="seat 0 recive msg req:{[type.googleapis.com/pbmj.MJAnimationReq]:{requestid:4}}" source=pitaya
+time="2025-11-12T16:08:39+08:00" level=info msg="seat 1 recive msg req:{[type.googleapis.com/pbmj.MJAnimationReq]:{seat:1 requestid:4}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat 0 recive msg req:{[type.googleapis.com/pbsc.SCDingQueReq]:{requestid:5}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\"}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"color\":-1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"color\":-1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"color\":-1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat 1 recive msg req:{[type.googleapis.com/pbsc.SCDingQueReq]:{requestid:5}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"seat\":1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"seat\":1,\"color\":-1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"seat\":1,\"color\":-1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"seat\":1,\"color\":-1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat 2 recive msg req:{[type.googleapis.com/pbsc.SCDingQueReq]:{requestid:5}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"seat\":2}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"seat\":2,\"color\":-1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"seat\":2,\"color\":-1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"seat\":2,\"color\":-1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat 3 recive msg req:{[type.googleapis.com/pbsc.SCDingQueReq]:{requestid:5 color:2}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"seat\":3,\"color\":2}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"seat\":3,\"color\":-1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"seat\":3,\"color\":-1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueFinishAck\",\"seat\":3,\"color\":-1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbsc.SCDingQueResultAck\",\"colors\":[0,0,0,2]}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJCallDataAck\"}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJCallDataAck\",\"seat\":1}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJCallDataAck\",\"seat\":2}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJCallDataAck\",\"seat\":3}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJRequestAck\",\"seat\":2,\"request_type\":64,\"requestid\":6}}" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=info msg="map[33:1 81:1 113:1 273:0 289:1 305:3 321:0 353:1 513:2 529:2 545:1 641:1]" source=pitaya
+time="2025-11-12T16:08:40+08:00" level=error msg="panic recovered 1 (kernel) * 7 (width) * 1 (height) must be 2, got 7\n goroutine 8 [running]:\nruntime/debug.Stack()\n\t/usr/lib/golang/src/runtime/debug/stack.go:26 +0x5e\ngithub.com/kevin-chtw/tw_common/gamebase/game.(*BotManager).processIncomingMessages.func1()\n\t/root/pitaya/tw_common/gamebase/game/botmanager.go:92 +0x38\npanic({0x1323860?, 0xc003ce8b70?})\n\t/usr/lib/golang/src/runtime/panic.go:792 +0x132\ngorgonia.org/gorgonia.Must(...)\n\t/root/go/pkg/mod/gorgonia.org/gorgonia@v0.9.18/gorgonia.go:19\ngithub.com/kevin-chtw/tw_mjsc_svr/ai.conv2d(0xc003caebe0, 0xc000290d20, 0x40, 0x7, 0x2, 0x3, 0x1, 0x0, {0x14f56a7, 0x5})\n\t/root/pitaya/tw_mjsc_svr/ai/network.go:34 +0x394\ngithub.com/kevin-chtw/tw_mjsc_svr/ai.buildResNet18_1D(0xc003caebe0, 0xc000290c40, 0x89)\n\t/root/pitaya/tw_mjsc_svr/ai/network.go:72 +0xd5\ngithub.com/kevin-chtw/tw_mjsc_svr/ai.NewDQNet()\n\t/root/pitaya/tw_mjsc_svr/ai/network.go:95 +0xe6\ngithub.com/kevin-chtw/tw_mjsc_svr/ai.GetRichAI.func1()\n\t/root/pitaya/tw_mjsc_svr/ai/ai.go:29 +0x1f\nsync.(*Once).doSlow(0x41b9e5?, 0x30?)\n\t/usr/lib/golang/src/sync/once.go:78 +0xab\nsync.(*Once).Do(...)\n\t/usr/lib/golang/src/sync/once.go:69\ngithub.com/kevin-chtw/tw_mjsc_svr/ai.GetRichAI(0x48?)\n\t/root/pitaya/tw_mjsc_svr/ai/ai.go:27 +0x39\ngithub.com/kevin-chtw/tw_mjsc_svr/bot.(*Player).requestAck(0xc003cc6210, {0x16ba4c0?, 0xc003cf66e0})\n\t/root/pitaya/tw_mjsc_svr/bot/player.go:243 +0x145\ngithub.com/kevin-chtw/tw_mjsc_svr/bot.(*Player).OnBotMsg(0xc003cc6210, {0x16ba100?, 0xc003cf63c0})\n\t/root/pitaya/tw_mjsc_svr/bot/player.go:93 +0x25e\ngithub.com/kevin-chtw/tw_common/gamebase/game.(*BotPlayer).OnBotMsg(...)\n\t/root/pitaya/tw_common/gamebase/game/botplayer.go:45\ngithub.com/kevin-chtw/tw_common/gamebase/game.(*BotManager).processIncomingMessages(0xc00007c0c0)\n\t/root/pitaya/tw_common/gamebase/game/botmanager.go:101 +0xfa\ncreated by github.com/kevin-chtw/tw_common/gamebase/game.NewBotManager in goroutine 1\n\t/root/pitaya/tw_common/gamebase/game/botmanager.go:47 +0x138\n" source=pitaya
+time="2025-11-12T16:08:51+08:00" level=warning msg="discard timeout" source=pitaya
+time="2025-11-12T16:08:51+08:00" level=info msg="%vmap[33:1 81:1 113:1 289:1 305:3 353:1 513:2 529:2 545:1 641:1]" source=pitaya
+time="2025-11-12T16:08:51+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDiscardAck\",\"seat\":2,\"tile\":81}}" source=pitaya
+time="2025-11-12T16:08:51+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJRequestAck\",\"seat\":3,\"request_type\":5,\"requestid\":7}}" source=pitaya
+time="2025-11-12T16:09:01+08:00" level=info msg="[81 577 577 257 1 385 81 17 1 33 369 369 369 97]" source=pitaya
+time="2025-11-12T16:09:01+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":3,\"tile\":97}}" source=pitaya
+time="2025-11-12T16:09:01+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":3,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:01+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":3,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:01+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":3,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:01+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJRequestAck\",\"seat\":3,\"request_type\":64,\"requestid\":8}}" source=pitaya
+time="2025-11-12T16:09:12+08:00" level=warning msg="discard timeout" source=pitaya
+time="2025-11-12T16:09:12+08:00" level=info msg="%vmap[1:2 17:1 33:1 81:2 97:1 257:1 369:3 385:1 577:2]" source=pitaya
+time="2025-11-12T16:09:12+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDiscardAck\",\"seat\":3,\"tile\":577}}" source=pitaya
+time="2025-11-12T16:09:12+08:00" level=info msg="[129 561 129 337 577 385 513 369 385 337 353 321 273 129]" source=pitaya
+time="2025-11-12T16:09:12+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"tile\":129}}" source=pitaya
+time="2025-11-12T16:09:12+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:12+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:12+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:12+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJRequestAck\",\"request_type\":64,\"requestid\":9}}" source=pitaya
+time="2025-11-12T16:09:23+08:00" level=warning msg="discard timeout" source=pitaya
+time="2025-11-12T16:09:23+08:00" level=info msg="%vmap[129:3 273:1 321:1 337:2 353:1 369:1 385:2 513:1 561:1 577:1]" source=pitaya
+time="2025-11-12T16:09:23+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDiscardAck\",\"tile\":129}}" source=pitaya
+time="2025-11-12T16:09:23+08:00" level=info msg="[97 273 625 1 353 49 385 593 257 289 561 641 593 33]" source=pitaya
+time="2025-11-12T16:09:23+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":1,\"tile\":33}}" source=pitaya
+time="2025-11-12T16:09:23+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":1,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:23+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":1,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:23+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":1,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:23+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJRequestAck\",\"seat\":1,\"request_type\":64,\"requestid\":10}}" source=pitaya
+time="2025-11-12T16:09:34+08:00" level=warning msg="discard timeout" source=pitaya
+time="2025-11-12T16:09:34+08:00" level=info msg="%vmap[1:1 33:1 49:1 97:1 257:1 273:1 289:1 353:1 385:1 561:1 593:2 625:1 641:1]" source=pitaya
+time="2025-11-12T16:09:34+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDiscardAck\",\"seat\":1,\"tile\":97}}" source=pitaya
+time="2025-11-12T16:09:34+08:00" level=info msg="[529 305 513 113 529 513 289 33 641 545 305 305 353 65]" source=pitaya
+time="2025-11-12T16:09:34+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":2,\"tile\":65}}" source=pitaya
+time="2025-11-12T16:09:34+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":2,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:34+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":2,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:34+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":2,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:34+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJRequestAck\",\"seat\":2,\"request_type\":64,\"requestid\":11}}" source=pitaya
+time="2025-11-12T16:09:45+08:00" level=warning msg="discard timeout" source=pitaya
+time="2025-11-12T16:09:45+08:00" level=info msg="%vmap[33:1 65:1 113:1 289:1 305:3 353:1 513:2 529:2 545:1 641:1]" source=pitaya
+time="2025-11-12T16:09:45+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDiscardAck\",\"seat\":2,\"tile\":113}}" source=pitaya
+time="2025-11-12T16:09:45+08:00" level=info msg="[81 577 257 1 385 81 17 1 33 369 369 369 97 561]" source=pitaya
+time="2025-11-12T16:09:45+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":3,\"tile\":561}}" source=pitaya
+time="2025-11-12T16:09:45+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":3,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:45+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":3,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:45+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":3,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:45+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJRequestAck\",\"seat\":3,\"request_type\":64,\"requestid\":12}}" source=pitaya
+time="2025-11-12T16:09:56+08:00" level=warning msg="discard timeout" source=pitaya
+time="2025-11-12T16:09:56+08:00" level=info msg="%vmap[1:2 17:1 33:1 81:2 97:1 257:1 369:3 385:1 561:1 577:1]" source=pitaya
+time="2025-11-12T16:09:56+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDiscardAck\",\"seat\":3,\"tile\":577}}" source=pitaya
+time="2025-11-12T16:09:56+08:00" level=info msg="[561 129 337 577 385 513 369 385 337 353 321 273 129 609]" source=pitaya
+time="2025-11-12T16:09:56+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"tile\":609}}" source=pitaya
+time="2025-11-12T16:09:56+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:56+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:56+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:09:56+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJRequestAck\",\"request_type\":64,\"requestid\":13}}" source=pitaya
+time="2025-11-12T16:10:07+08:00" level=warning msg="discard timeout" source=pitaya
+time="2025-11-12T16:10:07+08:00" level=info msg="%vmap[129:2 273:1 321:1 337:2 353:1 369:1 385:2 513:1 561:1 577:1 609:1]" source=pitaya
+time="2025-11-12T16:10:07+08:00" level=info msg="seat: -2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDiscardAck\",\"tile\":129}}" source=pitaya
+time="2025-11-12T16:10:07+08:00" level=info msg="[273 625 1 353 49 385 593 257 289 561 641 593 33 49]" source=pitaya
+time="2025-11-12T16:10:07+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":1,\"tile\":49}}" source=pitaya
+time="2025-11-12T16:10:07+08:00" level=info msg="seat: 0 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":1,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:10:07+08:00" level=info msg="seat: 2 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":1,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:10:07+08:00" level=info msg="seat: 3 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJDrawAck\",\"seat\":1,\"tile\":-1}}" source=pitaya
+time="2025-11-12T16:10:07+08:00" level=info msg="seat: 1 ack: {\"ack\":{\"@type\":\"type.googleapis.com/pbmj.MJRequestAck\",\"seat\":1,\"request_type\":64,\"requestid\":14}}" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=warning msg="got signal: terminated, shutting down..." source=pitaya
+time="2025-11-12T16:10:14+08:00" level=warning msg="server is stopping..." source=pitaya
+time="2025-11-12T16:10:14+08:00" level=info msg="closing all sessions, 0 sessions" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=info msg="finished closing sessions" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="waiting for etcd revoke" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="finished waiting for etcd revoke" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="server 16761c9b-aca9-42b2-99cf-ed77e7f5e4cf deleted by watcher" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="type: mjhaeb, servers: map[59850439-65e0-4bc3-ab0e-881d075c134b:0xc00023a900]" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="type: fdtable, servers: map[9b4c7a23-df68-4297-b718-107bd2918fad:0xc00023a940]" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="type: proxy, servers: map[6f2d1fd4-f57a-491a-bfa4-2666efce761e:0xc00007cd00]" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="type: island, servers: map[e30b4684-df2f-4c98-ba9b-708ac0fdcb81:0xc00023a9c0]" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="type: mjxl, servers: map[5eb25bf1-2b2d-4211-ac1e-3e74d83af998:0xc00023aa00]" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="type: mjsc, servers: map[ace18665-1269-46b1-be87-6eb0e6f882bb:0xc00007ccc0]" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="type: account, servers: map[f7af62b1-ee14-47ff-aca8-b59d00b77aa5:0xc00007cc00]" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="type: tourney, servers: map[77d02348-a2e5-4da3-ba2d-1a7d1f7babf5:0xc00007cc80]" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="stopping module: serviceDiscovery" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=info msg="module: serviceDiscovery stopped!" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="stopping module: rpcServer" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=info msg="module: rpcServer stopped!" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=debug msg="stopping module: rpcClient" source=pitaya
+time="2025-11-12T16:10:14+08:00" level=info msg="module: rpcClient stopped!" source=pitaya

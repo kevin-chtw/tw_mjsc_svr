@@ -2,12 +2,15 @@ package ai
 
 import (
 	"encoding/gob"
-	"log"
 	"math"
 	"os"
+	"slices"
 	"sync"
 
 	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
+	"github.com/topfreegames/pitaya/v3/pkg/logger"
+	"gorgonia.org/gorgonia"
+	"gorgonia.org/tensor"
 )
 
 var inst *RichAI
@@ -15,7 +18,6 @@ var once sync.Once
 
 type RichAI struct {
 	net       *DQNet
-	target    *DQNet
 	per       *PER
 	learnable bool
 	mu        sync.RWMutex
@@ -25,50 +27,42 @@ func GetRichAI(learnable bool) *RichAI {
 	once.Do(func() {
 		inst = &RichAI{
 			net:       NewDQNet(),
-			target:    NewDQNet(),
 			per:       NewPER(20000),
 			learnable: learnable,
 		}
-		LoadWeights(inst.net, "rich_dqn.gob")
-		LoadWeights(inst.target, "rich_dqn.gob")
+		loadWeights(inst.net, "rich_dqn.gob")
 	})
 	return inst
 }
 
-// SaveWeights 落盘
-func (ai *RichAI) SaveWeights() error {
-	ai.mu.RLock()
-	defer ai.mu.RUnlock()
-	return saveWeights(ai.net, "rich_dqn.gob")
-}
-
 // saveWeights 把网络权重落盘到文件
 func saveWeights(net *DQNet, path string) error {
+	w := make(map[string][]float32) // 导出字段
+	for _, n := range net.learnables {
+		w[n.Name()] = n.Value().Data().([]float32)
+	}
 	f, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return gob.NewEncoder(f).Encode(net)
+	return gob.NewEncoder(f).Encode(w)
 }
 
-func LoadWeights(net *DQNet, path string) error {
+func loadWeights(net *DQNet, path string) error {
+	var w map[string][]float32
 	f, err := os.Open(path)
 	if err != nil {
-		return err // 文件不存在时返回错误，调用方可以忽略
+		return err
 	}
 	defer f.Close()
-	return gob.NewDecoder(f).Decode(net)
-}
-
-// StepInput / StepOutput
-type StepInput struct {
-	RichFeature RichFeature
-	Mask        [34]bool
-}
-type StepOutput struct {
-	Action int       `json:"action"`
-	Q      []float32 `json:"q"`
+	if err := gob.NewDecoder(f).Decode(&w); err != nil {
+		return err
+	}
+	for _, n := range net.learnables {
+		gorgonia.Let(n, tensor.New(tensor.WithShape(n.Shape()...), tensor.WithBacking(w[n.Name()])))
+	}
+	return nil
 }
 
 // Decision 统一决策结果
@@ -109,9 +103,8 @@ func (ai *RichAI) Step(state *GameState) *Decision {
 }
 
 func (ai *RichAI) discard(state *GameState, d *Decision) *Decision {
-	for i := range 34 {
-		tile := mahjong.FromIndex(i)
-		if state.Hand[tile] <= 0 {
+	for tile, count := range state.Hand {
+		if count <= 0 {
 			continue
 		}
 
@@ -120,6 +113,16 @@ func (ai *RichAI) discard(state *GameState, d *Decision) *Decision {
 		state.PlayerMelds[state.CurrentSeat][tile]++
 
 		value := ai.evaluateState(state)
+		if tile.Color() == state.PlayerLacks[state.CurrentSeat] {
+			value += 1
+		}
+
+		if state.CallData != nil {
+			if _, ok := state.CallData[tile.ToInt32()]; ok {
+				value += 0.5
+			}
+		}
+
 		// 恢复状态
 		state.Hand[tile]++
 		state.PlayerMelds[state.CurrentSeat][tile]--
@@ -139,7 +142,7 @@ func (ai *RichAI) hu(state *GameState, d *Decision) *Decision {
 	state.HuTiles[state.CurrentSeat] = state.LastTile
 	state.HuPlayers = append(state.HuPlayers, state.CurrentSeat)
 
-	value := ai.evaluateState(state)
+	value := ai.evaluateState(state) + 1
 	// 恢复状态
 	state.HuTiles[state.CurrentSeat] = mahjong.TileNull
 	state.HuPlayers = state.HuPlayers[:len(state.HuPlayers)-1]
@@ -158,7 +161,7 @@ func (ai *RichAI) pon(state *GameState, d *Decision) *Decision {
 	state.PonTiles[state.CurrentSeat] = append(state.PonTiles[state.CurrentSeat], state.LastTile)
 	state.Hand[state.LastTile] -= 2
 
-	value := ai.evaluateState(state)
+	value := ai.evaluateState(state) + 0.2
 	// 恢复状态
 	state.PonTiles[state.CurrentSeat] = state.PonTiles[state.CurrentSeat][:len(state.PonTiles[state.CurrentSeat])-1]
 	state.Hand[state.LastTile] += 2
@@ -174,20 +177,30 @@ func (ai *RichAI) pon(state *GameState, d *Decision) *Decision {
 }
 
 func (ai *RichAI) kon(state *GameState, d *Decision) *Decision {
-	state.KonTiles[state.CurrentSeat] = append(state.KonTiles[state.CurrentSeat], state.LastTile)
-	count := state.Hand[state.LastTile]
-	state.Hand[state.LastTile] = 0
+	tile := state.LastTile
+	if state.Hand[tile] != 4 && !slices.Contains(state.PonTiles[state.CurrentSeat], tile) {
+		for t, c := range state.Hand {
+			if c == 4 {
+				tile = t
+				break
+			}
+		}
+	}
 
-	value := ai.evaluateState(state)
+	state.KonTiles[state.CurrentSeat] = append(state.KonTiles[state.CurrentSeat], tile)
+	count := state.Hand[tile]
+	state.Hand[tile] = 0
+
+	value := ai.evaluateState(state) + 0.5
 
 	// 恢复状态
 	state.KonTiles[state.CurrentSeat] = state.KonTiles[state.CurrentSeat][:len(state.KonTiles[state.CurrentSeat])-1]
-	state.Hand[state.LastTile] += count
+	state.Hand[tile] += count
 
 	if value > d.QValue {
 		d = &Decision{
 			Operate: mahjong.OperateKon,
-			Tile:    state.LastTile,
+			Tile:    tile,
 			QValue:  value,
 		}
 	}
@@ -213,8 +226,7 @@ func (ai *RichAI) evaluateState(state *GameState) float32 {
 	ai.mu.RLock()
 	defer ai.mu.RUnlock()
 
-	// 只用 target 网络评估局面价值
-	qValues := ai.target.Forward(obs)
+	qValues := ai.net.Forward(obs)
 
 	maxQ := float32(-1e9)
 	for _, q := range qValues {
@@ -237,10 +249,9 @@ func (ai *RichAI) GameEndUpdate(finalState *GameState, isWin bool, finalScore fl
 
 	baseReward := 1.0 + finalScore*0.1
 
-	// 2. 用 target 网络评估终局价值（避免高估）
 	finalFeat := finalState.ToRichFeature()
 	finalObs := finalFeat.ToVector()
-	finalQValues := ai.target.Forward(finalObs) // ← 用 target 网络
+	finalQValues := ai.net.Forward(finalObs)
 
 	// 3. 逆序遍历历史，逐步回传奖励（蒙特卡洛回溯）
 	for i := len(finalState.ActionHistory) - 1; i >= 0; i-- {
@@ -283,11 +294,8 @@ func (ai *RichAI) GameEndUpdate(finalState *GameState, isWin bool, finalScore fl
 	}
 
 	// 4. 立即训练一次
-	batchSize := 256
-	if ai.per.Len() >= batchSize {
-		states, targets := ai.per.Sample(batchSize)
-		loss := ai.net.Train(states, targets)
-		log.Printf("GameEndUpdate: trained %d samples, loss=%.6f", batchSize, loss)
-		ai.SaveWeights()
-	}
+	states, targets := ai.per.Sample()
+	loss := ai.net.Train(states, targets)
+	logger.Log.Infof("GameEndUpdate, loss=%.6f", loss)
+	saveWeights(ai.net, "rich_dqn.gob")
 }

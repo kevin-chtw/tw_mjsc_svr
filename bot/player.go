@@ -1,8 +1,6 @@
 package bot
 
 import (
-	"math/rand"
-
 	"github.com/kevin-chtw/tw_common/gamebase/game"
 	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
 	"github.com/kevin-chtw/tw_common/utils"
@@ -19,10 +17,7 @@ type Player struct {
 	*game.BotPlayer
 	handlers    map[string]func(proto.Message) error
 	gameState   *ai.GameState
-	pendingReqs []struct {
-		req   *pbmj.MJRequestReq
-		delay int // 剩余延迟(ms)
-	}
+	pendingReqs []*game.PendingReq
 }
 
 func NewPlayer(uid string, matchid, tableid int32) *game.BotPlayer {
@@ -39,6 +34,7 @@ func NewPlayer(uid string, matchid, tableid int32) *game.BotPlayer {
 
 func (p *Player) init() {
 	p.handlers[utils.TypeUrl(&pbmj.MJGameStartAck{})] = p.gameStartAck
+	p.handlers[utils.TypeUrl(&pbmj.MJAnimationAck{})] = p.animationAck
 	p.handlers[utils.TypeUrl(&pbmj.MJOpenDoorAck{})] = p.openDoorAck
 	p.handlers[utils.TypeUrl(&pbsc.SCSwapTilesAck{})] = p.swapTileAck
 	p.handlers[utils.TypeUrl(&pbsc.SCSwapFinishAck{})] = p.swapFinishAck
@@ -57,13 +53,11 @@ func (p *Player) init() {
 func (p *Player) OnTimer() error {
 	// 处理待发送请求
 	for i := 0; i < len(p.pendingReqs); i++ {
-		p.pendingReqs[i].delay -= 1000 // 每次减少1秒
-		if p.pendingReqs[i].delay <= 0 {
-			if err := p.sendMsg(p.pendingReqs[i].req); err != nil {
+		p.pendingReqs[i].Delay -= 1000 // 每次减少1秒
+		if p.pendingReqs[i].Delay <= 0 {
+			if err := p.sendMsg(p.pendingReqs[i].Req); err != nil {
 				logger.Log.Errorf("发送请求失败: %v", err)
 			}
-			logger.Log.Info("发送bot请求")
-			// 移除已发送请求
 			p.pendingReqs = append(p.pendingReqs[:i], p.pendingReqs[i+1:]...)
 			i-- // 调整索引
 		}
@@ -80,7 +74,7 @@ func (p *Player) OnBotMsg(msg proto.Message) error {
 	if ack.Ack.TypeUrl == utils.TypeUrl(&cproto.TablePlayerAck{}) {
 		playerAck := gameAck.(*cproto.TablePlayerAck)
 		if playerAck.Uid == p.Uid {
-			p.gameState.CurrentSeat = int(playerAck.Seat)
+			p.Seat = playerAck.Seat
 		}
 		return nil
 	}
@@ -102,6 +96,15 @@ func (p *Player) OnBotMsg(msg proto.Message) error {
 	return nil
 }
 
+func (p *Player) delayMsg(req proto.Message) {
+	// 添加到待发送队列
+	delay := 0 //1000 + rand.Intn(1000) // 3-5秒随机延迟
+	p.pendingReqs = append(p.pendingReqs, &game.PendingReq{
+		Req:   req,
+		Delay: delay,
+	})
+}
+
 func (p *Player) sendMsg(msg proto.Message) error {
 	data, err := anypb.New(msg)
 	if err != nil {
@@ -112,6 +115,8 @@ func (p *Player) sendMsg(msg proto.Message) error {
 }
 
 func (p *Player) gameStartAck(msg proto.Message) error {
+	p.gameState = ai.NewGameState()
+	p.gameState.CurrentSeat = int(p.Seat)
 	return nil
 }
 
@@ -122,12 +127,51 @@ func (p *Player) openDoorAck(msg proto.Message) error {
 			p.gameState.Hand[mahjong.Tile(tile)]++
 		}
 		p.gameState.TotalTiles -= (13*4 + 1)
-		return nil
 	}
+	logger.Log.Infof("seat=%d, %v", p.gameState.CurrentSeat, p.gameState.Hand)
+	return nil
+}
+
+func (p *Player) animationAck(msg proto.Message) error {
+	ack := msg.(*pbmj.MJAnimationAck)
+	req := &pbmj.MJAnimationReq{
+		Seat:      int32(p.gameState.CurrentSeat),
+		Requestid: ack.Requestid,
+	}
+	p.delayMsg(req)
 	return nil
 }
 
 func (p *Player) swapTileAck(msg proto.Message) error {
+	ack := msg.(*pbsc.SCSwapTilesAck)
+	colorCount := make(map[mahjong.EColor]int)            // key: 花色, value: 牌数
+	colorTiles := make(map[mahjong.EColor][]mahjong.Tile) // key: 花色, value: 该花色的牌
+
+	for tile, count := range p.gameState.Hand {
+		color := tile.Color()
+		colorCount[color] += count
+		colorTiles[color] = append(colorTiles[color], mahjong.MakeTiles(tile, count)...)
+	}
+
+	// 找出牌数大于3张且张数最少的花色
+	var bestColor mahjong.EColor = mahjong.ColorUndefined
+	var minCount int = 999
+	for color, count := range colorCount {
+		if count > 3 && count < minCount {
+			bestColor = color
+			minCount = count
+		}
+	}
+
+	if bestColor == mahjong.ColorUndefined {
+		return nil
+	}
+	tiles := colorTiles[bestColor]
+	req := &pbsc.SCSwapTilesReq{
+		Requestid: ack.Requestid,
+		Tiles:     mahjong.TilesInt32(tiles[:3]),
+	}
+	p.delayMsg(req)
 	return nil
 }
 
@@ -144,14 +188,40 @@ func (p *Player) swapFinishAck(msg proto.Message) error {
 func (p *Player) swapResultAck(msg proto.Message) error {
 	ack := msg.(*pbsc.SCSwapTilesResultAck)
 	swaps := ack.GetSwapTiles()
-	for _, t := range swaps[p.gameState.CurrentSeat].Tiles {
-		p.gameState.Hand[mahjong.Tile(t)]++
+	for _, s := range swaps {
+		if s.To == int32(p.gameState.CurrentSeat) {
+			for _, t := range s.Tiles {
+				p.gameState.Hand[mahjong.Tile(t)]++
+			}
+		}
 	}
 
+	logger.Log.Infof("seat=%d, %v", p.gameState.CurrentSeat, p.gameState.Hand)
 	return nil
 }
 
 func (p *Player) dingQueAck(msg proto.Message) error {
+	ack := msg.(*pbsc.SCDingQueAck)
+	colors := make(map[mahjong.EColor]int32)
+	for tile, count := range p.gameState.Hand {
+		colors[tile.Color()] += int32(count)
+	}
+	bestColor := mahjong.ColorCharacter
+	min := colors[mahjong.ColorCharacter]
+	for c := mahjong.ColorCharacter + 1; c <= mahjong.ColorDot; c++ {
+		if count, ok := colors[c]; !ok {
+			min = 0
+			bestColor = c
+		} else if count < min {
+			min = count
+			bestColor = c
+		}
+	}
+	req := &pbsc.SCDingQueReq{
+		Requestid: ack.Requestid,
+		Color:     int32(bestColor),
+	}
+	p.delayMsg(req)
 	return nil
 }
 
@@ -161,7 +231,6 @@ func (p *Player) dingQueResultAck(msg proto.Message) error {
 		p.gameState.PlayerLacks[i] = mahjong.EColor(c)
 	}
 	return nil
-
 }
 
 func (p *Player) requestAck(msg proto.Message) error {
@@ -169,6 +238,7 @@ func (p *Player) requestAck(msg proto.Message) error {
 	if ack.Seat != int32(p.gameState.CurrentSeat) {
 		return nil
 	}
+	logger.Log.Info(p.gameState.Hand)
 	p.gameState.Operates = mahjong.NewOperates(ack.RequestType)
 	ret := ai.GetRichAI(true).Step(p.gameState)
 	req := &pbmj.MJRequestReq{
@@ -177,18 +247,7 @@ func (p *Player) requestAck(msg proto.Message) error {
 		Requestid:   ack.Requestid,
 		Tile:        ret.Tile.ToInt32(),
 	}
-
-	logger.Log.Errorf("requestAck seat:%d request_type:%d requestid:%d tile:%d",
-		req.Seat, req.RequestType, req.Requestid, req.Tile)
-	// 添加到待发送队列
-	delay := 1000 + rand.Intn(1000) // 3-5秒随机延迟
-	p.pendingReqs = append(p.pendingReqs, struct {
-		req   *pbmj.MJRequestReq
-		delay int
-	}{
-		req:   req,
-		delay: delay,
-	})
+	p.delayMsg(req)
 	return nil
 }
 
@@ -215,6 +274,7 @@ func (p *Player) drawAck(msg proto.Message) error {
 	if ack.Seat == int32(p.gameState.CurrentSeat) {
 		p.gameState.LastTile = mahjong.Tile(ack.Tile)
 		p.gameState.Hand[mahjong.Tile(ack.Tile)]++
+		p.gameState.CallData = ack.CallData
 	}
 	return nil
 }

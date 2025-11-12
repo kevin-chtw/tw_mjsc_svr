@@ -2,6 +2,7 @@ package ai
 
 import (
 	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
+	"github.com/kevin-chtw/tw_proto/game/pbmj"
 )
 
 // ActionRecord 记录每一步操作
@@ -26,6 +27,7 @@ type GameState struct {
 	PlayerMelds   [4]map[mahjong.Tile]int // 各玩家的副露（座位号->牌->数量）
 	HuPlayers     []int                   // 胡牌玩家ID列表
 	ActionHistory []ActionRecord          // 操作历史记录
+	CallData      map[int32]*pbmj.CallData
 }
 
 func NewGameState() *GameState {
@@ -36,9 +38,10 @@ func NewGameState() *GameState {
 		PonTiles:      make(map[int][]mahjong.Tile),
 		KonTiles:      make(map[int][]mahjong.Tile),
 		HuTiles:       make(map[int]mahjong.Tile),
-		PlayerMelds:   [4]map[mahjong.Tile]int{},
+		PlayerMelds:   [4]map[mahjong.Tile]int{make(map[mahjong.Tile]int), make(map[mahjong.Tile]int), make(map[mahjong.Tile]int), make(map[mahjong.Tile]int)},
 		HuPlayers:     []int{},
 		ActionHistory: []ActionRecord{},
+		CallData:      make(map[int32]*pbmj.CallData),
 	}
 }
 
