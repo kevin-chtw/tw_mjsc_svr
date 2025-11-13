@@ -21,7 +21,7 @@ var app pitaya.Pitaya
 
 func main() {
 
-	serverType := utils.MJSC
+	serverType := utils.MJSC + "_trainer"
 	pitaya.SetLogger(utils.Logger(logrus.InfoLevel))
 
 	config := config.NewDefaultPitayaConfig()
