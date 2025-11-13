@@ -28,7 +28,7 @@ func NewStateDiscard(game mahjong.IGame, args ...any) mahjong.IState {
 }
 
 func (s *StateDiscard) OnEnter() {
-	s.operates = s.game.play.FetchSelfOperates()
+	s.operates = s.game.play.FetchSelfOperates(s.game.sender.Sender)
 	s.game.sender.SendRequestAck(s.game.play.GetCurSeat(), s.operates)
 	discardTime := s.game.GetRule().GetValue(RuleDiscardTime)
 	if s.game.GetPlayer(s.game.play.GetCurSeat()).IsTrusted() {

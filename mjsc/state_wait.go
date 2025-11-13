@@ -30,7 +30,7 @@ func (s *StateWait) OnEnter() {
 		if i == discardSeat {
 			continue
 		}
-		operates := s.game.play.FetchWaitOperates(i)
+		operates := s.game.play.FetchWaitOperates(i, s.game.sender.Sender)
 		s.operatesForSeats[i] = operates
 
 		if operates.Value != mahjong.OperatePass && !s.game.GetPlayer(i).IsTrusted() {

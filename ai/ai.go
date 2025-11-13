@@ -141,6 +141,12 @@ func (ai *RichAI) findBestDiscard(state *GameState, qValues []float32, isLack bo
 		}
 
 		value := ai.evaluateState(qValues, mahjong.OperateDiscard, tile)
+		if state.CallData != nil {
+			if _, ok := state.CallData[tile.ToInt32()]; ok {
+				value += 0.5
+			}
+		}
+
 		if bestD == nil || value > bestD.QValue {
 			bestD = &Decision{
 				Operate: mahjong.OperateDiscard,

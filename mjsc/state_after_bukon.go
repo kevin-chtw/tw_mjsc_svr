@@ -33,7 +33,7 @@ func (s *StateAfterBukon) OnEnter() {
 			continue
 		}
 
-		operates := s.game.play.FetchAfterBuKonOperates(i, newCheckerPao(s.game.play))
+		operates := s.game.play.FetchAfterBuKonOperates(i, newCheckerPao(s.game.play), s.game.sender.Sender)
 		s.operatesForSeats[i] = operates
 
 		if operates.Value != mahjong.OperatePass && !s.game.GetPlayer(i).IsTrusted() {
