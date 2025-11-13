@@ -80,10 +80,7 @@ func (p *Player) OnBotMsg(msg proto.Message) error {
 	}
 
 	if ack.Ack.TypeUrl == utils.TypeUrl(&cproto.GameOverAck{}) {
-		overAck := gameAck.(*cproto.GameOverAck)
-		if overAck.CurGameCount%10 == 0 && overAck.CurGameCount > 0 {
-			ai.GetRichAI(true).SaveWeights("tw_mjsc_svr.gob")
-		}
+		ai.GetRichAI(true).SaveWeights("tw_mjsc_svr.gob")
 		return nil
 	}
 	if ack.Ack.TypeUrl == utils.TypeUrl(&cproto.TableMsgAck{}) {

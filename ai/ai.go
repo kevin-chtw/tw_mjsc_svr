@@ -315,8 +315,7 @@ func (ai *RichAI) GameEndUpdate(finalState *GameState, finalScore float32) {
 
 // saveWeights 把网络权重落盘到文件
 func (ai *RichAI) SaveWeights(path string) error {
-	ai.count++
-	if ai.count%4 != 0 {
+	if ai.trainStep%40 != 0 {
 		return nil
 	}
 	logger.Log.Infof("==================================SaveWeights================")

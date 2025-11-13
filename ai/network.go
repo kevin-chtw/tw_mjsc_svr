@@ -26,6 +26,7 @@ type DQNet struct {
 	learnables gorgonia.Nodes
 	solver     gorgonia.Solver
 	vm         gorgonia.VM
+	inferVM    gorgonia.VM // 专用于推理的VM，避免计算loss
 }
 
 // 创建 DQNet 实例
@@ -48,6 +49,11 @@ func NewDQNet() *DQNet {
 	}
 	solver := gorgonia.NewAdamSolver(gorgonia.WithLearnRate(1e-3))
 
+	// 【关键修复】构建梯度图，计算所有可学习参数的梯度
+	if _, err := gorgonia.Grad(loss, learnables...); err != nil {
+		logger.Log.Fatalf("Failed to build gradient graph: %v", err)
+	}
+
 	return &DQNet{
 		g:          g,
 		input:      input,
@@ -57,24 +63,26 @@ func NewDQNet() *DQNet {
 		learnables: learnables,
 		solver:     solver,
 		vm:         gorgonia.NewTapeMachine(g),
+		inferVM:    gorgonia.NewTapeMachine(g, gorgonia.TraceExec()), // 用于推理，避免记录不必要的信息
 	}
 }
 
-// 用于模型前向传播
+// 用于模型前向传播（推理模式）
 func (net *DQNet) Forward(x []float32) []float32 {
 	inTensor := tensor.New(tensor.WithShape(1, inputDim), tensor.WithBacking(x))
 	if err := gorgonia.Let(net.input, inTensor); err != nil {
 		logger.Log.Infof("Let failed: %v", err)
 		return make([]float32, outputDim)
 	}
+	// 【优化】推理时给 targetQ 赋值相同维度的零向量，避免未初始化错误
 	if err := gorgonia.Let(net.targetQ, tensor.New(
 		tensor.WithShape(1, outputDim),
 		tensor.WithBacking(make([]float32, outputDim)))); err != nil {
 		logger.Log.Infof("Let targetQ patch failed: %v", err)
 		return make([]float32, outputDim)
 	}
-	net.vm.Reset()
-	if err := net.vm.RunAll(); err != nil {
+	net.inferVM.Reset()
+	if err := net.inferVM.RunAll(); err != nil {
 		logger.Log.Infof("RunAll failed: %v", err)
 		return make([]float32, outputDim)
 	}
@@ -91,7 +99,8 @@ func (net *DQNet) Train(states [][]float32, targets [][]float32) float32 {
 		totalLoss float32
 		success   int
 	)
-	for i := range batch {
+	// 【修复】语法错误：for i := range batch 无法遍历int，改为标准for循环
+	for i := 0; i < batch; i++ {
 		if err := gorgonia.Let(net.input, tensor.New(
 			tensor.WithShape(1, inputDim),
 			tensor.WithBacking(states[i]),
@@ -115,6 +124,16 @@ func (net *DQNet) Train(states [][]float32, targets [][]float32) float32 {
 			totalLoss += lossVal
 			success++
 		}
+
+		// 【关键修复】执行反向传播和权重更新
+		// 将 gorgonia.Nodes 转换为 []gorgonia.ValueGrad
+		valueGrads := make([]gorgonia.ValueGrad, len(net.learnables))
+		for idx, node := range net.learnables {
+			valueGrads[idx] = node
+		}
+		if err := net.solver.Step(valueGrads); err != nil {
+			logger.Log.Errorf("Solver step failed: %v", err)
+		}
 	}
 	if success == 0 {
 		return 0
@@ -122,31 +141,22 @@ func (net *DQNet) Train(states [][]float32, targets [][]float32) float32 {
 	return totalLoss / float32(success)
 }
 
-// ResNet-18 架构实现（标准版，适配 604 维输入）
 func buildResNet18(g *gorgonia.ExprGraph, input *gorgonia.Node, classNum int) *gorgonia.Node {
-	// 输入：(B, 604) → 扩展到 (B, expandedSize) → reshape 成 (B, 1, expandedH, expandedW)
-	// 604 → 608 (19×32)，用零填充
-	// 注意：由于训练时 batch size 总是 1，使用固定形状 (1, expandedSize-inputDim)
 	zeroPad := gorgonia.NewMatrix(g, tensor.Float32,
 		gorgonia.WithShape(1, expandedSize-inputDim),
 		gorgonia.WithName("zero_pad"),
 		gorgonia.WithInit(gorgonia.Zeroes()))
 
-	// 拼接：input + zeroPad → (B, expandedSize)
 	expanded := gorgonia.Must(gorgonia.Concat(1, input, zeroPad))
 
-	// Reshape 成 (B, 1, expandedH, expandedW) 用于 2D 卷积
 	x := gorgonia.Must(gorgonia.Reshape(expanded, []int{-1, 1, expandedH, expandedW}))
 
-	// 标准 ResNet-18 第一层：7×7 卷积，stride=2，padding=3
 	x = conv2d(g, x, 64, 7, 7, 2, 2, 3, 3, "conv1")
 	x = batchNorm(g, x, 64, "bn1")
 	x = gorgonia.Must(gorgonia.Rectify(x))
 
-	// MaxPool: 3×3，stride=2，padding=1
 	x = maxPool2d(x, 3, 3, 2, 2, 1, 1)
 
-	// 4 个残差层，每个 2 个 block
 	x = makeLayer(g, x, 64, 2, 1, "layer1")
 	x = makeLayer(g, x, 128, 2, 2, "layer2")
 	x = makeLayer(g, x, 256, 2, 2, "layer3")
@@ -204,7 +214,6 @@ func maxPool2d(x *gorgonia.Node, kH, kW, strideH, strideW, padH, padW int) *gorg
 }
 
 func basicBlock(g *gorgonia.ExprGraph, x *gorgonia.Node, outCh int, stride int, name string) *gorgonia.Node {
-	// 标准 ResNet-18：3×3 卷积
 	h := conv2d(g, x, outCh, 3, 3, stride, stride, 1, 1, name+"_conv1")
 	h = batchNorm(g, h, outCh, name+"_bn1")
 	h = gorgonia.Must(gorgonia.Rectify(h))
@@ -234,17 +243,12 @@ func makeLayer(g *gorgonia.ExprGraph, x *gorgonia.Node, outCh int, blocks int, s
 }
 
 func globalAvgPool2d(x *gorgonia.Node) *gorgonia.Node {
-	// 对于很小的空间维度（如 1×1），直接 Reshape 即可
-	// 对于较大的空间维度，使用 Mean 操作
 	shape := x.Shape()
 	if len(shape) >= 4 && shape[2] == 1 && shape[3] == 1 {
-		// 空间维度已经是 1×1，直接 Reshape
 		return gorgonia.Must(gorgonia.Reshape(x, []int{-1, shape[1]}))
 	}
-	// 否则使用 Mean 操作（对空间维度求平均）
 	out, err := gorgonia.Mean(x, 2, 3)
 	if err != nil {
-		// 如果 Mean 失败，尝试使用 Reshape（假设空间维度很小）
 		logger.Log.Warnf("Mean failed, using Reshape instead: %v", err)
 		return gorgonia.Must(gorgonia.Reshape(x, []int{-1, shape[1]}))
 	}

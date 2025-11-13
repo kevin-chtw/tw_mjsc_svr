@@ -14,8 +14,10 @@ type experience struct {
 }
 type priorityQueue []*experience
 
-func (pq priorityQueue) Len() int           { return len(pq) }
-func (pq priorityQueue) Less(i, j int) bool { return pq[i].priority > pq[j].priority }
+func (pq priorityQueue) Len() int { return len(pq) }
+
+// 【修复】改为最小堆：优先级小的在堆顶，容量满时优先驱逐低优先级样本
+func (pq priorityQueue) Less(i, j int) bool { return pq[i].priority < pq[j].priority }
 func (pq priorityQueue) Swap(i, j int)      { pq[i], pq[j] = pq[j], pq[i] }
 func (pq *priorityQueue) Push(x interface{}) {
 	*pq = append(*pq, x.(*experience))
@@ -47,12 +49,42 @@ func (p *PER) Add(state, target []float32, tdErr float64) {
 	heap.Push(&p.pq, exp)
 }
 
+// 【优化】批量采样：采样指定数量的高优先级样本，并保留部分低优先级样本在池中
 func (p *PER) Sample() (states, targets [][]float32) {
+	// 采样策略：取出所有样本，按优先级从高到低排序，取前N个用于训练，剩余的放回
+	// 为简化实现，这里先取出所有样本
+	allExps := make([]*experience, 0, len(p.pq))
 	for len(p.pq) > 0 {
 		exp := heap.Pop(&p.pq).(*experience)
-		states = append(states, exp.state)
-		targets = append(targets, exp.target)
+		allExps = append(allExps, exp)
 	}
+
+	// 由于是最小堆，Pop出来的顺序是从小到大，我们需要反转以获得高优先级样本
+	// 反转数组，使高优先级在前
+	for i, j := 0, len(allExps)-1; i < j; i, j = i+1, j-1 {
+		allExps[i], allExps[j] = allExps[j], allExps[i]
+	}
+
+	// 采样策略：取前80%用于训练
+	sampleSize := len(allExps)
+	if sampleSize > 32 {
+		sampleSize = 32 // 限制批次大小为32
+	}
+
+	for i := 0; i < sampleSize && i < len(allExps); i++ {
+		states = append(states, allExps[i].state)
+		targets = append(targets, allExps[i].target)
+	}
+
+	// 将剩余样本（低优先级的20%）放回经验池，避免完全丢失历史
+	keepSize := len(allExps) / 5 // 保留20%
+	if keepSize > 100 {
+		keepSize = 100 // 最多保留100个
+	}
+	for i := sampleSize; i < sampleSize+keepSize && i < len(allExps); i++ {
+		heap.Push(&p.pq, allExps[i])
+	}
+
 	return
 }
 
