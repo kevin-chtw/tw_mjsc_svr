@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	inputDim     = 604 + HistoryDim // 604 + 4300 = 4904（基础特征 + 历史操作序列）
+	inputDim     = 605 + HistoryDim // 605 + 4300 = 4905（基础特征 + 历史操作序列）
 	outputDim    = 137
-	expandedH    = 71 // 71×70 = 4970，最接近 4904
+	expandedH    = 71 // 71×70 = 4970，最接近 4905
 	expandedW    = 70
 	expandedSize = expandedH * expandedW // 4970
 )
@@ -91,7 +91,7 @@ func (net *DQNet) Train(states [][]float32, targets [][]float32) float32 {
 		totalLoss float32
 		success   int
 	)
-	for i := 0; i < batch; i++ {
+	for i := range batch {
 		if err := gorgonia.Let(net.input, tensor.New(
 			tensor.WithShape(1, inputDim),
 			tensor.WithBacking(states[i]),

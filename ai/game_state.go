@@ -62,7 +62,7 @@ func (s *GameState) RecordDecision(operate int, tile mahjong.Tile) {
 }
 
 // RecordExecutedAction 记录实现操作历史（根据 ack 记录实际执行的操作，用于生成特征，限制100条）
-func (s *GameState) RecordExecutedAction(seat int, operate int, tile mahjong.Tile) {
+func (s *GameState) RecordAction(seat int, operate int, tile mahjong.Tile) {
 	record := ActionRecord{
 		Seat:      seat,
 		Operate:   operate,
@@ -76,12 +76,6 @@ func (s *GameState) RecordExecutedAction(seat int, operate int, tile mahjong.Til
 	}
 }
 
-// RecordAction 保留向后兼容（已废弃，建议使用 RecordDecision）
-// Deprecated: 使用 RecordDecision 代替
-func (s *GameState) RecordAction(operate int, tile mahjong.Tile) {
-	s.RecordDecision(operate, tile)
-}
-
 func (s *GameState) ToRichFeature() *RichFeature {
 	r := &RichFeature{
 		Hand:          [34]float32{},
@@ -93,6 +87,7 @@ func (s *GameState) ToRichFeature() *RichFeature {
 		PlayerLacks:   [4][3]float32{},
 		CurrentSeat:   [4]float32{},
 		TotalTiles:    0.0,
+		SelfTurn:      0.0,
 		Operates:      [5]float32{},
 		ActionHistory: [HistoryDim]float32{}, // 历史操作序列初始化为0
 	}
@@ -163,6 +158,11 @@ func (s *GameState) ToRichFeature() *RichFeature {
 	// 总牌张数（归一化到0-1范围，假设最大牌数为144）
 	if s.TotalTiles > 0 {
 		r.TotalTiles = float32(s.TotalTiles) / 144.0
+	}
+
+	// 是否自己回合（0或1）
+	if s.SelfTurn {
+		r.SelfTurn = 1.0
 	}
 
 	// 设置可执行操作（one-hot编码）

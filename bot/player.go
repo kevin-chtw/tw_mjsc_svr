@@ -78,6 +78,14 @@ func (p *Player) OnBotMsg(msg proto.Message) error {
 		}
 		return nil
 	}
+
+	if ack.Ack.TypeUrl == utils.TypeUrl(&cproto.GameOverAck{}) {
+		overAck := gameAck.(*cproto.GameOverAck)
+		if overAck.CurGameCount%10 == 0 && overAck.CurGameCount > 0 {
+			ai.GetRichAI(true).SaveWeights("tw_mjsc_svr.gob")
+		}
+		return nil
+	}
 	if ack.Ack.TypeUrl == utils.TypeUrl(&cproto.TableMsgAck{}) {
 		payLoads := gameAck.(*cproto.TableMsgAck).GetMsg()
 		scAck := &pbsc.SCAck{}
@@ -266,7 +274,7 @@ func (p *Player) discardAck(msg proto.Message) error {
 	}
 
 	// 记录实现操作（出牌）
-	p.gameState.RecordExecutedAction(int(ack.Seat), mahjong.OperateDiscard, mahjong.Tile(ack.Tile))
+	p.gameState.RecordAction(int(ack.Seat), mahjong.OperateDiscard, mahjong.Tile(ack.Tile))
 
 	return nil
 }
@@ -286,7 +294,7 @@ func (p *Player) huAck(msg proto.Message) error {
 	ack := msg.(*pbmj.MJHuAck)
 	for _, h := range ack.HuData {
 		p.gameState.HuPlayers = append(p.gameState.HuPlayers, int(h.Seat))
-		p.gameState.RecordExecutedAction(int(h.Seat), mahjong.OperateHu, mahjong.Tile(ack.Tile))
+		p.gameState.RecordAction(int(h.Seat), mahjong.OperateHu, mahjong.Tile(ack.Tile))
 	}
 	return nil
 }
@@ -298,7 +306,7 @@ func (p *Player) konAck(msg proto.Message) error {
 		p.gameState.Hand[mahjong.Tile(ack.Tile)] = 0
 	}
 	// 记录实现操作（杠牌）
-	p.gameState.RecordExecutedAction(int(ack.Seat), mahjong.OperateKon, mahjong.Tile(ack.Tile))
+	p.gameState.RecordAction(int(ack.Seat), mahjong.OperateKon, mahjong.Tile(ack.Tile))
 	return nil
 }
 func (p *Player) ponAck(msg proto.Message) error {
@@ -308,7 +316,7 @@ func (p *Player) ponAck(msg proto.Message) error {
 		p.gameState.Hand[mahjong.Tile(ack.Tile)] -= 2
 	}
 	// 记录实现操作（碰牌）
-	p.gameState.RecordExecutedAction(int(ack.Seat), mahjong.OperatePon, mahjong.Tile(ack.Tile))
+	p.gameState.RecordAction(int(ack.Seat), mahjong.OperatePon, mahjong.Tile(ack.Tile))
 	return nil
 }
 
@@ -323,7 +331,6 @@ func (p *Player) resultAck(msg proto.Message) error {
 			break
 		}
 	}
-	isWin := finalScore > 0
-	ai.GetRichAI(true).GameEndUpdate(p.gameState, isWin, finalScore)
+	ai.GetRichAI(true).GameEndUpdate(p.gameState, finalScore)
 	return nil
 }

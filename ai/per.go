@@ -48,12 +48,10 @@ func (p *PER) Add(state, target []float32, tdErr float64) {
 }
 
 func (p *PER) Sample() (states, targets [][]float32) {
-	for i := 0; i < len(p.pq); i++ {
+	for len(p.pq) > 0 {
 		exp := heap.Pop(&p.pq).(*experience)
 		states = append(states, exp.state)
 		targets = append(targets, exp.target)
-		// 重新 push 保持堆大小
-		heap.Push(&p.pq, exp)
 	}
 	return
 }
