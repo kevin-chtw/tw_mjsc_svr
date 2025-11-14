@@ -102,7 +102,13 @@ func (p *Player) OnBotMsg(msg proto.Message) error {
 }
 
 func (p *Player) delayMsg(req proto.Message) {
-	// 添加到待发送队列
+	// 训练模式下立即发送，不延迟
+	if ai.IsTrainingMode() {
+		p.sendMsg(req)
+		return
+	}
+
+	// 生产模式：添加到待发送队列
 	delay := 0 //1000 + rand.Intn(1000) // 3-5秒随机延迟
 	p.pendingReqs = append(p.pendingReqs, &game.PendingReq{
 		Req:   req,
@@ -332,7 +338,9 @@ func (p *Player) resultAck(msg proto.Message) error {
 	// 设置流局标记
 	p.gameState.IsLiuJu = ack.Liuju
 
-	// 传递 GameState 给AI训练（所有信息都在 GameState 中）
-	ai.GetRichAI().GameEndUpdate(p.gameState)
+	// 提交训练任务到队列（异步，不阻塞）
+	// 注意：下一局会创建新的 gameState，所以当前对象不会被修改，可以直接传递
+	ai.GetRichAI().QueueTraining(p.gameState)
+
 	return nil
 }

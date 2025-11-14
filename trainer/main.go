@@ -25,7 +25,7 @@ func main() {
 	ai.SetTrainingMode(true)
 
 	serverType := utils.MJSC + "_trainer"
-	pitaya.SetLogger(utils.Logger(logrus.InfoLevel))
+	pitaya.SetLogger(utils.Logger(logrus.WarnLevel))
 
 	config := config.NewDefaultPitayaConfig()
 	config.SerializerType = uint16(serialize.PROTOBUF)
@@ -48,6 +48,7 @@ func train() {
 		ScoreBase:   1,
 		GameCount:   10000,
 		PlayerCount: 4,
+		MatchType:   "trainer", // 训练模式：跳过5秒等待
 	})
 	for i := range 4 {
 		table.HandleAddPlayer(context.Background(), &sproto.AddPlayerReq{

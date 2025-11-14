@@ -19,12 +19,13 @@ var once sync.Once
 var globalLearnable bool // 全局训练模式标志
 
 type RichAI struct {
-	net       *DQNet
-	per       *PER
-	mu        sync.RWMutex
-	count     int
-	trainStep int     // 训练步数，用于学习率衰减
-	epsilon   float32 // ε-greedy 探索率
+	net        *DQNet
+	per        *PER
+	mu         sync.RWMutex
+	count      int
+	trainStep  int             // 训练步数，用于学习率衰减
+	epsilon    float32         // ε-greedy 探索率
+	trainQueue chan *GameState // 训练队列
 }
 
 // SetTrainingMode 设置全局训练模式（在程序启动时调用）
@@ -32,16 +33,27 @@ func SetTrainingMode(enable bool) {
 	globalLearnable = enable
 }
 
+// IsTrainingMode 返回当前是否为训练模式
+func IsTrainingMode() bool {
+	return globalLearnable
+}
+
 func GetRichAI() *RichAI {
 	once.Do(func() {
 		inst = &RichAI{
-			net:       NewDQNet(),
-			per:       NewPER(20000),
-			count:     0,
-			trainStep: 0,
-			epsilon:   0.2, // 初始探索率20%
+			net:        NewDQNet(),
+			per:        NewPER(20000),
+			count:      0,
+			trainStep:  0,
+			epsilon:    0.2,                        // 初始探索率20%
+			trainQueue: make(chan *GameState, 100), // 训练队列缓冲100个
 		}
 		loadWeights(inst.net, "tw_mjsc_svr.gob")
+
+		// 启动训练协程
+		if globalLearnable {
+			go inst.trainWorker()
+		}
 	})
 	return inst
 }
@@ -321,15 +333,29 @@ func maxMaskedQFromObs(q []float32, obs []float32) float32 {
 	return max
 }
 
-// GameEndUpdate 带指标的训练更新（支持 reward shaping）
-func (ai *RichAI) GameEndUpdate(finalState *GameState) {
+// QueueTraining 将训练任务加入队列（异步，不阻塞）
+func (ai *RichAI) QueueTraining(finalState *GameState) {
 	if !globalLearnable {
 		return
 	}
 
-	ai.mu.Lock()
-	defer ai.mu.Unlock()
+	// 非阻塞发送，如果队列满了就丢弃（避免阻塞游戏）
+	select {
+	case ai.trainQueue <- finalState:
+	default:
+		logger.Log.Warnf("Training queue full, dropping training task")
+	}
+}
 
+// trainWorker 训练工作协程（单线程顺序处理）
+func (ai *RichAI) trainWorker() {
+	for finalState := range ai.trainQueue {
+		ai.gameEndUpdate(finalState)
+	}
+}
+
+// gameEndUpdate 带指标的训练更新（支持 reward shaping）- 内部方法
+func (ai *RichAI) gameEndUpdate(finalState *GameState) {
 	γ := float32(0.99)
 	historyLen := len(finalState.DecisionHistory)
 	nextMaxQ := float32(0.0)
@@ -371,6 +397,10 @@ func (ai *RichAI) GameEndUpdate(finalState *GameState) {
 		shapedReward -= 5.0
 	}
 
+	// ======== 准备训练数据和训练（全程加锁，避免gorgonia并发冲突） ========
+	ai.mu.Lock()
+	defer ai.mu.Unlock()
+
 	for i := historyLen - 1; i >= 0; i-- {
 		decisionRec := finalState.DecisionHistory[i]
 
@@ -405,9 +435,11 @@ func (ai *RichAI) GameEndUpdate(finalState *GameState) {
 		// 直接将目标动作的目标值设置为 tdTarget（不进行二次"软更新"）
 		target[actionIdx] = tdTarget
 		tdErr := float32(math.Abs(float64(tdTarget - currQ[actionIdx])))
+
 		ai.per.Add(decisionRec.Obs, target, float64(tdErr))
 	}
 
+	// 训练网络
 	states, targets := ai.per.Sample()
 	loss := ai.net.Train(states, targets)
 	ai.trainStep++
@@ -418,10 +450,12 @@ func (ai *RichAI) GameEndUpdate(finalState *GameState) {
 	} else {
 		ai.epsilon = 0.05
 	}
+	currTrainStep := ai.trainStep
+	currEpsilon := ai.epsilon
 
 	// 增强日志：记录关键指标
-	logger.Log.Infof("==================================GameEndUpdate, loss=%.6f, trainStep=%d, epsilon=%.3f, isHu=%v, multi=%d, liuju=%v, steps=%d, shapedReward=%.2f",
-		loss, ai.trainStep, ai.epsilon, isHu, huMulti, isLiuJu, decisionSteps, shapedReward)
+	logger.Log.Warnf("==================================GameEndUpdate, loss=%.6f, trainStep=%d, epsilon=%.3f, isHu=%v, multi=%d, liuju=%v, steps=%d, shapedReward=%.2f",
+		loss, currTrainStep, currEpsilon, isHu, huMulti, isLiuJu, decisionSteps, shapedReward)
 }
 
 // SaveWeights 把网络权重落盘到文件

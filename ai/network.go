@@ -54,6 +54,7 @@ func NewDQNet() *DQNet {
 		logger.Log.Fatalf("Failed to build gradient graph: %v", err)
 	}
 
+	vm := gorgonia.NewTapeMachine(g)
 	return &DQNet{
 		g:          g,
 		input:      input,
@@ -62,8 +63,8 @@ func NewDQNet() *DQNet {
 		loss:       loss,
 		learnables: learnables,
 		solver:     solver,
-		vm:         gorgonia.NewTapeMachine(g),
-		inferVM:    gorgonia.NewTapeMachine(g, gorgonia.TraceExec()), // 用于推理，避免记录不必要的信息
+		vm:         vm,
+		inferVM:    vm, // 使用同一个VM，避免状态不一致
 	}
 }
 
