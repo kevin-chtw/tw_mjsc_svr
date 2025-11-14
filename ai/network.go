@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	inputDim     = 605 + HistoryDim // 605 + 4300 = 4905（基础特征 + 历史操作序列）
+	inputDim     = 605 + HistoryDim // 605 + 2580 = 3185（基础特征 + 历史操作序列）
 	outputDim    = 137
-	expandedH    = 71 // 71×70 = 4970，最接近 4905
-	expandedW    = 70
-	expandedSize = expandedH * expandedW // 4970
+	expandedH    = 57 // 57×56 = 3192，最接近 3185
+	expandedW    = 56
+	expandedSize = expandedH * expandedW // 3192
 )
 
 // DQNet 网络结构定义

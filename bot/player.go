@@ -337,7 +337,6 @@ func (p *Player) resultAck(msg proto.Message) error {
 
 	// 设置流局标记
 	p.gameState.IsLiuJu = ack.Liuju
-
 	// 提交训练任务到队列（异步，不阻塞）
 	// 注意：下一局会创建新的 gameState，所以当前对象不会被修改，可以直接传递
 	ai.GetRichAI().QueueTraining(p.gameState)

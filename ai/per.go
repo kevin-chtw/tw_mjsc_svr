@@ -59,30 +59,17 @@ func (p *PER) Sample() (states, targets [][]float32) {
 		allExps = append(allExps, exp)
 	}
 
-	// 由于是最小堆，Pop出来的顺序是从小到大，我们需要反转以获得高优先级样本
+	// 【优化】取出所有样本用于训练，训练后自动清空PER
+	// 由于是最小堆，Pop出来的顺序是从小到大（低优先级在前）
 	// 反转数组，使高优先级在前
 	for i, j := 0, len(allExps)-1; i < j; i, j = i+1, j-1 {
 		allExps[i], allExps[j] = allExps[j], allExps[i]
 	}
 
-	// 采样策略：取前80%用于训练
-	sampleSize := len(allExps)
-	if sampleSize > 32 {
-		sampleSize = 32 // 限制批次大小为32
-	}
-
-	for i := 0; i < sampleSize && i < len(allExps); i++ {
-		states = append(states, allExps[i].state)
-		targets = append(targets, allExps[i].target)
-	}
-
-	// 将剩余样本（低优先级的20%）放回经验池，避免完全丢失历史
-	keepSize := len(allExps) / 5 // 保留20%
-	if keepSize > 100 {
-		keepSize = 100 // 最多保留100个
-	}
-	for i := sampleSize; i < sampleSize+keepSize && i < len(allExps); i++ {
-		heap.Push(&p.pq, allExps[i])
+	// 使用所有样本进行训练
+	for _, exp := range allExps {
+		states = append(states, exp.state)
+		targets = append(targets, exp.target)
 	}
 
 	return

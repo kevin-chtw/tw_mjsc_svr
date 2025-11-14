@@ -42,11 +42,11 @@ func main() {
 }
 
 func train() {
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second)
 	table := game.GetTableManager().LoadOrStore(1, 1)
 	table.HandleAddTable(context.Background(), &sproto.AddTableReq{
 		ScoreBase:   1,
-		GameCount:   10000,
+		GameCount:   3000, // 减少到1000局，约2.5小时完成
 		PlayerCount: 4,
 		MatchType:   "trainer", // 训练模式：跳过5秒等待
 	})

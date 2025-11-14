@@ -31,7 +31,7 @@ type GameState struct {
 	PlayerMelds     [4]map[mahjong.Tile]int // 各玩家的副露（座位号->牌->数量）
 	HuPlayers       []int                   // 胡牌玩家ID列表
 	DecisionHistory []DecisionRecord        // 决策历史记录（用于训练，不限制长度，不生成特征）
-	ActionHistory   []ActionRecord          // 实现操作历史记录（用于生成特征，限制100条）
+	ActionHistory   []ActionRecord          // 实现操作历史记录（用于生成特征，限制60条）
 	CallData        map[int32]*pbmj.CallData
 	// 终局统计信息
 	FinalScore float32 // 最终得分（包含点炮惩罚）
@@ -75,9 +75,9 @@ func (s *GameState) RecordAction(seat int, operate int, tile mahjong.Tile) {
 	}
 	s.ActionHistory = append(s.ActionHistory, record)
 
-	// 限制历史记录最大长度为 100，超过时只保留最后100条
-	if len(s.ActionHistory) > 100 {
-		s.ActionHistory = s.ActionHistory[len(s.ActionHistory)-100:]
+	// 限制历史记录最大长度为 60，超过时只保留最后60条（减少内存和计算）
+	if len(s.ActionHistory) > 60 {
+		s.ActionHistory = s.ActionHistory[len(s.ActionHistory)-60:]
 	}
 }
 
