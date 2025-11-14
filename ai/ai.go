@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"sync"
 
@@ -15,24 +16,30 @@ import (
 
 var inst *RichAI
 var once sync.Once
+var globalLearnable bool // 全局训练模式标志
 
 type RichAI struct {
 	net       *DQNet
 	per       *PER
-	learnable bool
 	mu        sync.RWMutex
 	count     int
-	trainStep int // 训练步数，用于学习率衰减
+	trainStep int     // 训练步数，用于学习率衰减
+	epsilon   float32 // ε-greedy 探索率
 }
 
-func GetRichAI(learnable bool) *RichAI {
+// SetTrainingMode 设置全局训练模式（在程序启动时调用）
+func SetTrainingMode(enable bool) {
+	globalLearnable = enable
+}
+
+func GetRichAI() *RichAI {
 	once.Do(func() {
 		inst = &RichAI{
 			net:       NewDQNet(),
 			per:       NewPER(20000),
-			learnable: learnable,
 			count:     0,
 			trainStep: 0,
+			epsilon:   0.2, // 初始探索率20%
 		}
 		loadWeights(inst.net, "tw_mjsc_svr.gob")
 	})
@@ -81,12 +88,6 @@ type Decision struct {
 
 // Step 统一决策入口 - 外部传入可行操作和局面
 func (ai *RichAI) Step(state *GameState) *Decision {
-	var bestD *Decision
-
-	// 根据请求中是否有出牌操作设置 SelfTurn
-	if state.Operates != nil {
-		state.SelfTurn = state.Operates.HasOperate(mahjong.OperateDiscard)
-	}
 
 	// 先统一计算一次 Q 值，避免重复计算
 	feat := state.ToRichFeature()
@@ -94,42 +95,63 @@ func (ai *RichAI) Step(state *GameState) *Decision {
 
 	ai.mu.RLock()
 	qValues := ai.net.Forward(obs)
+	epsilon := ai.epsilon
 	ai.mu.RUnlock()
 
-	// 辅助函数：更新最佳决策
-	updateBest := func(d *Decision) {
-		if d != nil && (bestD == nil || d.QValue > bestD.QValue) {
-			bestD = d
+	var candidates []*Decision // 收集所有候选动作
+	state.SelfTurn = state.Operates.HasOperate(mahjong.OperateDiscard)
+
+	if state.Operates.HasOperate(mahjong.OperateDiscard) {
+		candidates = append(candidates, ai.addDiscards(state, qValues)...)
+	}
+	if state.Operates.HasOperate(mahjong.OperateHu) {
+		if d := ai.hu(state, qValues); d != nil {
+			candidates = append(candidates, d)
+		}
+	}
+	if state.Operates.HasOperate(mahjong.OperatePon) {
+		if d := ai.pon(state, qValues); d != nil {
+			candidates = append(candidates, d)
+		}
+	}
+	if state.Operates.HasOperate(mahjong.OperateKon) {
+		candidates = append(candidates, ai.addKons(state, qValues)...)
+	}
+	if state.Operates.HasOperate(mahjong.OperatePass) {
+		if d := ai.pass(state, qValues); d != nil {
+			candidates = append(candidates, d)
 		}
 	}
 
-	if state.Operates.HasOperate(mahjong.OperateDiscard) {
-		updateBest(ai.discard(state, qValues))
+	if len(candidates) == 0 {
+		logger.Log.Errorf("==========================No candidates, epsilon=%.3f================", epsilon)
+		return nil
 	}
 
-	if state.Operates.HasOperate(mahjong.OperateHu) {
-		updateBest(ai.hu(state, qValues))
-	}
-	if state.Operates.HasOperate(mahjong.OperatePon) {
-		updateBest(ai.pon(state, qValues))
-	}
-	if state.Operates.HasOperate(mahjong.OperateKon) {
-		updateBest(ai.kon(state, qValues))
-	}
-	if state.Operates.HasOperate(mahjong.OperatePass) {
-		updateBest(ai.pass(state, qValues))
+	// ε-greedy 策略：在所有候选动作中统一应用
+	var bestD *Decision
+	if globalLearnable && len(candidates) > 1 && rand.Float32() < epsilon {
+		// 探索：从所有候选动作中随机选择
+		bestD = candidates[rand.Intn(len(candidates))]
+	} else {
+		// 利用：选择Q值最高的动作
+		for _, d := range candidates {
+			if bestD == nil || d.QValue > bestD.QValue {
+				bestD = d
+			}
+		}
 	}
 
-	if ai.learnable && bestD != nil && bestD.Operate != int(mahjong.OperateNone) {
-		logger.Log.Infof("==========================RecordDecision  %v================", bestD)
+	if globalLearnable && bestD != nil && bestD.Operate != int(mahjong.OperateNone) {
+		logger.Log.Infof("==========================RecordDecision  %v (epsilon=%.3f, candidates=%d)================", bestD, epsilon, len(candidates))
 		state.RecordDecision(bestD.Operate, bestD.Tile)
 	}
 
 	return bestD
 }
 
-func (ai *RichAI) findBestDiscard(state *GameState, qValues []float32, isLack bool) *Decision {
-	var bestD *Decision
+func (ai *RichAI) addTiles(state *GameState, qValues []float32, isLack bool) []*Decision {
+	var result []*Decision
 	lackColor := state.PlayerLacks[state.CurrentSeat]
 
 	for tile, count := range state.Hand {
@@ -141,33 +163,26 @@ func (ai *RichAI) findBestDiscard(state *GameState, qValues []float32, isLack bo
 		}
 
 		value := ai.evaluateState(qValues, mahjong.OperateDiscard, tile)
-		if state.CallData != nil {
-			if _, ok := state.CallData[tile.ToInt32()]; ok {
-				value += 0.5
-			}
-		}
-
-		if bestD == nil || value > bestD.QValue {
-			bestD = &Decision{
-				Operate: mahjong.OperateDiscard,
-				Tile:    tile,
-				QValue:  value,
-			}
-		}
+		result = append(result, &Decision{
+			Operate: mahjong.OperateDiscard,
+			Tile:    tile,
+			QValue:  value,
+		})
 	}
-
-	return bestD
+	return result
 }
 
-func (ai *RichAI) discard(state *GameState, qValues []float32) *Decision {
-	if bestLackD := ai.findBestDiscard(state, qValues, true); bestLackD != nil {
-		return bestLackD
+func (ai *RichAI) addDiscards(state *GameState, qValues []float32) []*Decision {
+	// 优先收集缺门牌，如果没有再收集其他牌
+	result := ai.addTiles(state, qValues, true)
+	if len(result) == 0 {
+		result = ai.addTiles(state, qValues, false)
 	}
-	return ai.findBestDiscard(state, qValues, false)
+	return result
 }
 
 func (ai *RichAI) hu(state *GameState, qValues []float32) *Decision {
-	value := ai.evaluateState(qValues, mahjong.OperateHu, state.LastTile) + 2
+	value := ai.evaluateState(qValues, mahjong.OperateHu, state.LastTile)
 	return &Decision{
 		Operate: mahjong.OperateHu,
 		Tile:    state.LastTile,
@@ -176,7 +191,7 @@ func (ai *RichAI) hu(state *GameState, qValues []float32) *Decision {
 }
 
 func (ai *RichAI) pon(state *GameState, qValues []float32) *Decision {
-	value := ai.evaluateState(qValues, mahjong.OperatePon, state.LastTile) + 0.5
+	value := ai.evaluateState(qValues, mahjong.OperatePon, state.LastTile)
 	return &Decision{
 		Operate: mahjong.OperatePon,
 		Tile:    state.LastTile,
@@ -184,7 +199,8 @@ func (ai *RichAI) pon(state *GameState, qValues []float32) *Decision {
 	}
 }
 
-func (ai *RichAI) kon(state *GameState, qValues []float32) *Decision {
+func (ai *RichAI) addKons(state *GameState, qValues []float32) []*Decision {
+	var result []*Decision
 	tiles := make([]mahjong.Tile, 0)
 	if state.SelfTurn {
 		for _, t := range state.PonTiles[state.CurrentSeat] {
@@ -201,18 +217,15 @@ func (ai *RichAI) kon(state *GameState, qValues []float32) *Decision {
 		tiles = append(tiles, state.LastTile)
 	}
 
-	var bestD *Decision
 	for _, t := range tiles {
 		value := ai.evaluateState(qValues, mahjong.OperateKon, t)
-		if bestD == nil || value > bestD.QValue {
-			bestD = &Decision{
-				Operate: mahjong.OperateKon,
-				Tile:    t,
-				QValue:  value,
-			}
-		}
+		result = append(result, &Decision{
+			Operate: mahjong.OperateKon,
+			Tile:    t,
+			QValue:  value,
+		})
 	}
-	return bestD
+	return result
 }
 
 func (ai *RichAI) pass(_ *GameState, qValues []float32) *Decision {
@@ -249,8 +262,68 @@ func (ai *RichAI) evaluateState(qValues []float32, operate int, tile mahjong.Til
 	return qValues[actionIdx]
 }
 
-func (ai *RichAI) GameEndUpdate(finalState *GameState, finalScore float32) {
-	if !ai.learnable {
+// 从 obs 中提取可行动作掩码并计算掩码后的最大 Q 值
+// obs 向量中，Operates 的 5 维 one-hot 位于索引 [600, 605)
+// 动作索引区间定义见 actionIndex:
+//
+//	Discard: [0,34), Pon: [34,68), Kon: [68,102), Hu: [102,136), Pass: [136,137)
+func maxMaskedQFromObs(q []float32, obs []float32) float32 {
+	const operatesOffset = 600
+	const operatesDim = 5
+	if len(obs) < operatesOffset+operatesDim {
+		max := float32(-1e9)
+		for _, v := range q {
+			if v > max {
+				max = v
+			}
+		}
+		return max
+	}
+	ops := obs[operatesOffset : operatesOffset+operatesDim]
+	ranges := make([][2]int, 0, 5)
+	// Discard
+	if ops[0] > 0.5 {
+		ranges = append(ranges, [2]int{0, 34})
+	}
+	// Hu
+	if ops[1] > 0.5 {
+		ranges = append(ranges, [2]int{102, 136})
+	}
+	// Pon
+	if ops[2] > 0.5 {
+		ranges = append(ranges, [2]int{34, 68})
+	}
+	// Kon
+	if ops[3] > 0.5 {
+		ranges = append(ranges, [2]int{68, 102})
+	}
+	// Pass
+	if ops[4] > 0.5 {
+		ranges = append(ranges, [2]int{136, 137})
+	}
+	if len(ranges) == 0 {
+		max := float32(-1e9)
+		for _, v := range q {
+			if v > max {
+				max = v
+			}
+		}
+		return max
+	}
+	max := float32(-1e9)
+	for _, r := range ranges {
+		for i := r[0]; i < r[1]; i++ {
+			if q[i] > max {
+				max = q[i]
+			}
+		}
+	}
+	return max
+}
+
+// GameEndUpdate 带指标的训练更新（支持 reward shaping）
+func (ai *RichAI) GameEndUpdate(finalState *GameState) {
+	if !globalLearnable {
 		return
 	}
 
@@ -261,24 +334,57 @@ func (ai *RichAI) GameEndUpdate(finalState *GameState, finalScore float32) {
 	historyLen := len(finalState.DecisionHistory)
 	nextMaxQ := float32(0.0)
 
+	// 从 GameState 中获取终局信息
+	finalScore := finalState.FinalScore
+	isLiuJu := finalState.IsLiuJu
+	decisionSteps := len(finalState.DecisionHistory)
+
+	// 判断是否胡牌及番数
+	isHu := false
+	var huMulti int64
+	for _, huSeat := range finalState.HuPlayers {
+		if huSeat == finalState.CurrentSeat {
+			isHu = true
+			if multi, ok := finalState.HuMultis[huSeat]; ok {
+				huMulti = multi
+			}
+			break
+		}
+	}
+
+	// 计算增强奖励（reward shaping）
+	shapedReward := finalScore
+
+	// 1. 胡牌奖励：基础分 + 番数加成
+	if isHu {
+		// 胡牌基础奖励
+		shapedReward += 10.0
+		// 番数奖励（鼓励做大番）
+		shapedReward += float32(huMulti) * 2.0
+		// 快速胡牌奖励（步数越少奖励越高）
+		if decisionSteps > 0 && decisionSteps < 50 {
+			speedBonus := (50.0 - float32(decisionSteps)) / 10.0
+			shapedReward += speedBonus
+		}
+	} else if isLiuJu {
+		// 2. 流局惩罚（只惩罚未胡牌的AI，鼓励主动胡牌）
+		shapedReward -= 5.0
+	}
+
 	for i := historyLen - 1; i >= 0; i-- {
 		decisionRec := finalState.DecisionHistory[i]
 
 		currQ := ai.net.Forward(decisionRec.Obs)
 
-		// 先计算当前状态的 max Q 值，用于下一个（更早的）决策
-		maxCurrQ := float32(-1e9)
-		for _, q := range currQ {
-			if q > maxCurrQ {
-				maxCurrQ = q
-			}
-		}
+		// 先计算当前状态的 max Q 值（带可行动作掩码），用于下一个（更早的）决策
+		maxCurrQ := maxMaskedQFromObs(currQ, decisionRec.Obs)
 
-		// 计算 TD 目标：最后一步使用 finalScore，其他步骤使用 γ * nextMaxQ
+		// 计算 TD 目标：最后一步使用 shapedReward，其他步骤使用 γ * nextMaxQ
 		var tdTarget float32
 		if i == historyLen-1 {
-			// 最后一步：tdTarget = finalScore（最终状态之后没有未来）
-			tdTarget = 1.0 + finalScore*0.1
+			// 最后一步：使用温和的归一化，保留更多信号强度
+			// tanh(x/5) 比 tanh(x/20) 保留更多值的范围
+			tdTarget = float32(math.Tanh(float64(shapedReward) / 5.0))
 		} else {
 			// 其他步骤：tdTarget = γ * nextMaxQ（使用下一个状态的 max Q 值）
 			tdTarget = γ * nextMaxQ
@@ -296,13 +402,8 @@ func (ai *RichAI) GameEndUpdate(finalState *GameState, finalScore float32) {
 			continue
 		}
 
-		learningRate := float32(1.0)
-		if ai.trainStep > 0 {
-			decayFactor := float32(math.Pow(0.9, float64(ai.trainStep)/1000.0))
-			learningRate = float32(math.Max(0.1, float64(1.0*decayFactor)))
-		}
-		oldValue := currQ[actionIdx]
-		target[actionIdx] = (1-learningRate)*oldValue + learningRate*tdTarget
+		// 直接将目标动作的目标值设置为 tdTarget（不进行二次"软更新"）
+		target[actionIdx] = tdTarget
 		tdErr := float32(math.Abs(float64(tdTarget - currQ[actionIdx])))
 		ai.per.Add(decisionRec.Obs, target, float64(tdErr))
 	}
@@ -310,11 +411,24 @@ func (ai *RichAI) GameEndUpdate(finalState *GameState, finalScore float32) {
 	states, targets := ai.per.Sample()
 	loss := ai.net.Train(states, targets)
 	ai.trainStep++
-	logger.Log.Infof("==================================GameEndUpdate, loss=%.6f, trainStep=%d", loss, ai.trainStep)
+
+	// epsilon 衰减：从 0.2 衰减到 0.05，在 10000 步后稳定
+	if ai.trainStep < 10000 {
+		ai.epsilon = 0.2 - (0.15 * float32(ai.trainStep) / 10000.0)
+	} else {
+		ai.epsilon = 0.05
+	}
+
+	// 增强日志：记录关键指标
+	logger.Log.Infof("==================================GameEndUpdate, loss=%.6f, trainStep=%d, epsilon=%.3f, isHu=%v, multi=%d, liuju=%v, steps=%d, shapedReward=%.2f",
+		loss, ai.trainStep, ai.epsilon, isHu, huMulti, isLiuJu, decisionSteps, shapedReward)
 }
 
-// saveWeights 把网络权重落盘到文件
+// SaveWeights 把网络权重落盘到文件
 func (ai *RichAI) SaveWeights(path string) error {
+	if !globalLearnable {
+		return nil // 非训练模式不保存权重
+	}
 	if ai.trainStep%40 != 0 {
 		return nil
 	}

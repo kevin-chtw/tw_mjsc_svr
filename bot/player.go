@@ -80,7 +80,7 @@ func (p *Player) OnBotMsg(msg proto.Message) error {
 	}
 
 	if ack.Ack.TypeUrl == utils.TypeUrl(&cproto.GameOverAck{}) {
-		ai.GetRichAI(true).SaveWeights("tw_mjsc_svr.gob")
+		ai.GetRichAI().SaveWeights("tw_mjsc_svr.gob")
 		return nil
 	}
 	if ack.Ack.TypeUrl == utils.TypeUrl(&cproto.TableMsgAck{}) {
@@ -245,7 +245,7 @@ func (p *Player) requestAck(msg proto.Message) error {
 	}
 	logger.Log.Info(p.gameState.Hand)
 	p.gameState.Operates = mahjong.NewOperates(ack.RequestType)
-	ret := ai.GetRichAI(true).Step(p.gameState)
+	ret := ai.GetRichAI().Step(p.gameState)
 	req := &pbmj.MJRequestReq{
 		Seat:        ack.Seat,
 		RequestType: int32(ret.Operate),
@@ -291,6 +291,7 @@ func (p *Player) huAck(msg proto.Message) error {
 	ack := msg.(*pbmj.MJHuAck)
 	for _, h := range ack.HuData {
 		p.gameState.HuPlayers = append(p.gameState.HuPlayers, int(h.Seat))
+		p.gameState.HuMultis[int(h.Seat)] = h.Multi // 记录番数
 		p.gameState.RecordAction(int(h.Seat), mahjong.OperateHu, mahjong.Tile(ack.Tile))
 	}
 	return nil
@@ -320,14 +321,18 @@ func (p *Player) ponAck(msg proto.Message) error {
 func (p *Player) resultAck(msg proto.Message) error {
 	ack := msg.(*pbmj.MJResultAck)
 
-	// 计算最终得分
-	var finalScore float32
+	// 设置终局信息到 GameState
 	for _, player := range ack.PlayerResults {
 		if player.Seat == int32(p.gameState.CurrentSeat) {
-			finalScore = float32(player.WinScore)
+			p.gameState.FinalScore = float32(player.WinScore)
 			break
 		}
 	}
-	ai.GetRichAI(true).GameEndUpdate(p.gameState, finalScore)
+
+	// 设置流局标记
+	p.gameState.IsLiuJu = ack.Liuju
+
+	// 传递 GameState 给AI训练（所有信息都在 GameState 中）
+	ai.GetRichAI().GameEndUpdate(p.gameState)
 	return nil
 }

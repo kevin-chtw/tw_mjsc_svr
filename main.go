@@ -6,6 +6,7 @@ import (
 	"github.com/kevin-chtw/tw_common/gamebase/game"
 	"github.com/kevin-chtw/tw_common/gamebase/service"
 	"github.com/kevin-chtw/tw_common/utils"
+	"github.com/kevin-chtw/tw_mjsc_svr/ai"
 	"github.com/kevin-chtw/tw_mjsc_svr/bot"
 	"github.com/kevin-chtw/tw_mjsc_svr/mjsc"
 	"github.com/sirupsen/logrus"
@@ -19,6 +20,8 @@ import (
 var app pitaya.Pitaya
 
 func main() {
+	// 关闭训练模式（仅推理）
+	ai.SetTrainingMode(false)
 
 	serverType := utils.MJSC
 	pitaya.SetLogger(utils.Logger(logrus.InfoLevel))

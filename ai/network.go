@@ -47,7 +47,7 @@ func NewDQNet() *DQNet {
 			learnables = append(learnables, n)
 		}
 	}
-	solver := gorgonia.NewAdamSolver(gorgonia.WithLearnRate(1e-3))
+	solver := gorgonia.NewAdamSolver(gorgonia.WithLearnRate(3e-3)) // 增加学习率以加快收敛
 
 	// 【关键修复】构建梯度图，计算所有可学习参数的梯度
 	if _, err := gorgonia.Grad(loss, learnables...); err != nil {

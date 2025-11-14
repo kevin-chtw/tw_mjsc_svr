@@ -26,12 +26,16 @@ type GameState struct {
 	PonTiles        map[int][]mahjong.Tile  // 碰牌信息（玩家ID->碰的牌列表）
 	KonTiles        map[int][]mahjong.Tile  // 杠牌信息（玩家ID->杠的牌列表）
 	HuTiles         map[int]mahjong.Tile    // 胡牌信息（玩家ID->胡的牌）
+	HuMultis        map[int]int64           // 胡牌番数（玩家ID->番数）
 	PlayerLacks     [4]mahjong.EColor       // 四个玩家的缺门花色
 	PlayerMelds     [4]map[mahjong.Tile]int // 各玩家的副露（座位号->牌->数量）
 	HuPlayers       []int                   // 胡牌玩家ID列表
 	DecisionHistory []DecisionRecord        // 决策历史记录（用于训练，不限制长度，不生成特征）
 	ActionHistory   []ActionRecord          // 实现操作历史记录（用于生成特征，限制100条）
 	CallData        map[int32]*pbmj.CallData
+	// 终局统计信息
+	FinalScore float32 // 最终得分（包含点炮惩罚）
+	IsLiuJu    bool    // 是否流局
 }
 
 func NewGameState() *GameState {
@@ -42,6 +46,7 @@ func NewGameState() *GameState {
 		PonTiles:        make(map[int][]mahjong.Tile),
 		KonTiles:        make(map[int][]mahjong.Tile),
 		HuTiles:         make(map[int]mahjong.Tile),
+		HuMultis:        make(map[int]int64),
 		PlayerMelds:     [4]map[mahjong.Tile]int{make(map[mahjong.Tile]int), make(map[mahjong.Tile]int), make(map[mahjong.Tile]int), make(map[mahjong.Tile]int)},
 		HuPlayers:       []int{},
 		DecisionHistory: []DecisionRecord{},

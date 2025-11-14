@@ -7,6 +7,7 @@ import (
 
 	"github.com/kevin-chtw/tw_common/gamebase/game"
 	"github.com/kevin-chtw/tw_common/utils"
+	"github.com/kevin-chtw/tw_mjsc_svr/ai"
 	"github.com/kevin-chtw/tw_mjsc_svr/bot"
 	"github.com/kevin-chtw/tw_mjsc_svr/mjsc"
 	"github.com/kevin-chtw/tw_proto/sproto"
@@ -20,6 +21,8 @@ import (
 var app pitaya.Pitaya
 
 func main() {
+	// 开启训练模式
+	ai.SetTrainingMode(true)
 
 	serverType := utils.MJSC + "_trainer"
 	pitaya.SetLogger(utils.Logger(logrus.InfoLevel))
