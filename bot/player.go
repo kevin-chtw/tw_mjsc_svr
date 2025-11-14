@@ -79,10 +79,6 @@ func (p *Player) OnBotMsg(msg proto.Message) error {
 		return nil
 	}
 
-	if ack.Ack.TypeUrl == utils.TypeUrl(&cproto.GameOverAck{}) {
-		ai.GetRichAI().SaveWeights("tw_mjsc_svr.gob")
-		return nil
-	}
 	if ack.Ack.TypeUrl == utils.TypeUrl(&cproto.TableMsgAck{}) {
 		payLoads := gameAck.(*cproto.TableMsgAck).GetMsg()
 		scAck := &pbsc.SCAck{}

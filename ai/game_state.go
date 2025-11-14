@@ -57,13 +57,17 @@ func NewGameState() *GameState {
 
 // RecordDecision 记录决策历史（AI做决策时调用，保存 Obs 用于训练，不限制长度，不生成特征）
 func (s *GameState) RecordDecision(operate int, tile mahjong.Tile) {
+	// 占位函数，实际的Obs在Step中已经设置
+	// 这里只用于兼容旧代码，实际记录在Step中完成
+}
+
+func (s *GameState) RecordDecisionWithObs(operate int, tile mahjong.Tile, obs []float32) {
 	record := DecisionRecord{
 		Operate: operate,
 		Tile:    tile,
-		Obs:     s.ToRichFeature().ToVector(), // 保存状态特征用于训练
+		Obs:     obs,
 	}
 	s.DecisionHistory = append(s.DecisionHistory, record)
-	// 不限制长度，保留所有决策记录用于训练
 }
 
 // RecordExecutedAction 记录实现操作历史（根据 ack 记录实际执行的操作，用于生成特征，限制100条）

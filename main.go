@@ -23,6 +23,12 @@ func main() {
 	// 关闭训练模式（仅推理）
 	ai.SetTrainingMode(false)
 
+	// 初始化 Python AI 服务客户端
+	if err := ai.InitHTTPAIClient("localhost:50051"); err != nil {
+		logger.Log.Fatalf("Failed to init AI client: %v", err)
+	}
+	defer ai.GetHTTPAIClient().Close()
+
 	serverType := utils.MJSC
 	pitaya.SetLogger(utils.Logger(logrus.InfoLevel))
 
