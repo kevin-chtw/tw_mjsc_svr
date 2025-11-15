@@ -9,7 +9,6 @@ import json
 import numpy as np
 import random
 from collections import deque
-from datetime import datetime
 import sys
 import logging
 
@@ -18,8 +17,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler('ai_service.log'),
-        logging.StreamHandler(sys.stdout)
+        logging.FileHandler('ai_service.log')
     ]
 )
 logger = logging.getLogger(__name__)
@@ -345,9 +343,6 @@ class AIService:
         # 自动保存模型
         if self.train_count - self.last_save_count >= self.save_every:
             self.save_model()
-            # 同时保存一个带时间戳的备份
-            backup_path = f'mahjong_dqn_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pth'
-            self.save_model(backup_path)
             self.last_save_count = self.train_count
             logger.info(f"💾 Auto-saved model (train_count={self.train_count})")
         

@@ -2,6 +2,7 @@ package ai
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/kevin-chtw/tw_common/gamebase/mahjong"
@@ -240,13 +241,9 @@ func (ai *RichAI) QueueTraining(finalState *GameState) {
 		}
 	} else {
 		// 增加听牌奖励（鼓励尽快听牌）
-		if len(finalState.CallData) > 0 {
-			tingReward := float32(len(finalState.CallData)) * 5.0
-			shapedReward += tingReward
-			logger.Log.Warnf("TingPai reward: %.2f, callData count: %d", tingReward, len(finalState.CallData))
-		} else {
+		if len(finalState.CallData) <= 0 {
 			// 减小未听牌惩罚（因为已经有步级惩罚）
-			shapedReward -= 2.0
+			shapedReward -= 10.0
 		}
 	}
 
@@ -275,11 +272,7 @@ func (ai *RichAI) QueueTraining(finalState *GameState) {
 
 		// 计算折扣后的奖励：越早的决策，折扣越多
 		stepsFromEnd := len(finalState.DecisionHistory) - 1 - i
-		discountMultiplier := float32(1.0)
-		for j := 0; j < stepsFromEnd; j++ {
-			discountMultiplier *= discountFactor
-		}
-		reward := shapedReward*discountMultiplier + rec.Reward
+		reward := shapedReward*float32(math.Pow(float64(discountFactor), float64(stepsFromEnd))) + rec.Reward
 
 		var nextState []float32
 		done := false

@@ -64,29 +64,29 @@ func (s *GameState) RecordDecision(operate int, tile mahjong.Tile, obs []float32
 
 	if operate == int(mahjong.OperateDiscard) {
 		if len(s.CallData) > 0 {
-			if _, ok := s.CallData[int32(tile)]; ok {
-				// 打能听的牌：根据听牌数量动态调整奖励（听牌越多，奖励越大）
-				tingCount := len(s.CallData)
-				record.Reward = float32(tingCount) * 0.5
-				if record.Reward < 2.0 {
-					record.Reward = 2.0 // 最小奖励为2.0
-				}
-				if record.Reward > 5.0 {
-					record.Reward = 5.0 // 最大奖励为5.0
-				}
-			} else {
+			if _, ok := s.CallData[int32(tile)]; !ok {
 				// 打不能听的牌：减小惩罚强度
-				record.Reward = -2.0
+				record.Reward = -5.0
 			}
 		} else {
 			tiles := make([]mahjong.Tile, 0)
-			for tile, count := range s.Hand {
-				tiles = append(tiles, mahjong.MakeTiles(tile, count)...)
+			for t, count := range s.Hand {
+				tiles = append(tiles, mahjong.MakeTiles(t, count)...)
 			}
-			ting1, _ := mahjong.CalcTing(tiles, nil, nil)
-			mahjong.RemoveElements(tiles, tile, 1)
-			ting2, _ := mahjong.CalcTing(tiles, nil, nil)
-			record.Reward = float32(ting1-ting2) * 2.0
+
+			bestTing := 1000
+			currentTing := 1000
+			for t := range s.Hand {
+				temtiles := mahjong.RemoveElements(tiles, t, 1)
+				ting, _ := mahjong.CalcTing(temtiles, nil, nil)
+				if ting < bestTing {
+					bestTing = ting
+				}
+				if t == tile {
+					currentTing = ting
+				}
+			}
+			record.Reward = float32(bestTing-currentTing) * 5.0
 		}
 	}
 	s.DecisionHistory = append(s.DecisionHistory, record)
