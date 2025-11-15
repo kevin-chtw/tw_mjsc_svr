@@ -52,9 +52,9 @@ func train() {
 	table := game.GetTableManager().LoadOrStore(1, 1)
 	table.HandleAddTable(context.Background(), &sproto.AddTableReq{
 		ScoreBase:   1,
-		GameCount:   3000, // 减少到1000局，约2.5小时完成
+		GameCount:   20000,
 		PlayerCount: 4,
-		MatchType:   "trainer", // 训练模式：跳过5秒等待
+		MatchType:   "trainer",
 	})
 	for i := range 4 {
 		table.HandleAddPlayer(context.Background(), &sproto.AddPlayerReq{

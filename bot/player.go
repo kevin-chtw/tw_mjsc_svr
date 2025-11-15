@@ -314,6 +314,7 @@ func (p *Player) ponAck(msg proto.Message) error {
 	p.gameState.PonTiles[int(ack.Seat)] = append(p.gameState.PonTiles[int(ack.Seat)], mahjong.Tile(ack.Tile))
 	if ack.Seat == int32(p.gameState.CurrentSeat) {
 		p.gameState.Hand[mahjong.Tile(ack.Tile)] -= 2
+		p.gameState.CallData = ack.CallData
 	}
 	// 记录实现操作（碰牌）
 	p.gameState.RecordAction(int(ack.Seat), mahjong.OperatePon, mahjong.Tile(ack.Tile))

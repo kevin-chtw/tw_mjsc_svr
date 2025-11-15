@@ -33,6 +33,7 @@ type Decision struct {
 	Tile    mahjong.Tile `json:"tile"`
 	QValue  float32      `json:"q_value"`
 	Obs     []float32    `json:"obs,omitempty"`
+	Reward  float32      `json:"reward"`
 }
 
 // Step - 通过 HTTP 调用 Python AI 服务
@@ -110,7 +111,7 @@ func (ai *RichAI) Step(state *GameState) *Decision {
 	// 记录决策用于训练
 	if globalLearnable && decision.Operate != int(mahjong.OperateNone) {
 		decision.Obs = obs
-		state.RecordDecisionWithObs(decision.Operate, decision.Tile, obs)
+		state.RecordDecision(decision.Operate, decision.Tile, obs)
 	}
 
 	// 记录慢速决策
@@ -214,7 +215,6 @@ func (ai *RichAI) QueueTraining(finalState *GameState) {
 	}
 
 	decisionSteps := len(finalState.DecisionHistory)
-	isLiuJu := len(finalState.HuPlayers) == 0
 	finalScore := finalState.FinalScore
 
 	isHu := false
@@ -231,18 +231,27 @@ func (ai *RichAI) QueueTraining(finalState *GameState) {
 
 	shapedReward := finalScore
 	if isHu {
-		shapedReward += 10.0
-		shapedReward += float32(huMulti) * 2.0
+		// 大幅提高胡牌奖励（提高10倍）
+		shapedReward += 100.0
+		shapedReward += float32(huMulti) * 20.0
 		if decisionSteps > 0 && decisionSteps < 50 {
-			speedBonus := (50.0 - float32(decisionSteps)) / 10.0
+			speedBonus := (50.0 - float32(decisionSteps)) / 2.0
 			shapedReward += speedBonus
 		}
-	} else if isLiuJu {
-		shapedReward -= 5.0
+	} else {
+		// 增加听牌奖励（鼓励尽快听牌）
+		if len(finalState.CallData) > 0 {
+			tingReward := float32(len(finalState.CallData)) * 5.0
+			shapedReward += tingReward
+			logger.Log.Warnf("TingPai reward: %.2f, callData count: %d", tingReward, len(finalState.CallData))
+		} else {
+			// 减小未听牌惩罚（因为已经有步级惩罚）
+			shapedReward -= 2.0
+		}
 	}
 
-	logger.Log.Warnf("QueueTraining: isHu=%v, multi=%d, liuju=%v, steps=%d, shapedReward=%.2f",
-		isHu, huMulti, isLiuJu, decisionSteps, shapedReward)
+	logger.Log.Warnf("QueueTraining: isHu=%v, multi=%d,  steps=%d, shapedReward=%.2f",
+		isHu, huMulti, decisionSteps, shapedReward)
 
 	httpClient := GetHTTPAIClient()
 	if httpClient == nil {
@@ -257,15 +266,20 @@ func (ai *RichAI) QueueTraining(finalState *GameState) {
 
 	steps := make([]StepTransition, 0, len(finalState.DecisionHistory))
 	validSteps := 0
+	// 使用折扣因子分配奖励：越接近最终结果的决策，奖励越大
+	// 例如：最后一步 100%，倒数第二步 80%，倒数第三步 64%...
+	discountFactor := float32(0.95)
+
 	for i := 0; i < len(finalState.DecisionHistory); i++ {
 		rec := &finalState.DecisionHistory[i]
 
-		var reward float32
-		if i == len(finalState.DecisionHistory)-1 {
-			reward = shapedReward
-		} else {
-			reward = 0
+		// 计算折扣后的奖励：越早的决策，折扣越多
+		stepsFromEnd := len(finalState.DecisionHistory) - 1 - i
+		discountMultiplier := float32(1.0)
+		for j := 0; j < stepsFromEnd; j++ {
+			discountMultiplier *= discountFactor
 		}
+		reward := shapedReward*discountMultiplier + rec.Reward
 
 		var nextState []float32
 		done := false
@@ -293,7 +307,6 @@ func (ai *RichAI) QueueTraining(finalState *GameState) {
 			ShapedReward: shapedReward,
 			IsHu:         isHu,
 			HuMulti:      huMulti,
-			IsLiuju:      isLiuJu,
 		}
 		httpClient.ReportEpisode(episode)
 		logger.Log.Infof("QueueTraining: sent %d valid steps out of %d total", validSteps, len(finalState.DecisionHistory))

@@ -25,7 +25,7 @@ func InitHTTPAIClient(addr string) error {
 	httpAIClient = &HTTPAIClient{
 		baseURL: fmt.Sprintf("http://%s", addr),
 		client: &http.Client{
-			Timeout: 5 * time.Second,
+			Timeout: 30 * time.Second, // 增加到30秒，避免训练时超时
 		},
 	}
 

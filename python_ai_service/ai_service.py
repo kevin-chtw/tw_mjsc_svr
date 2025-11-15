@@ -9,6 +9,7 @@ import json
 import numpy as np
 import random
 from collections import deque
+from datetime import datetime
 import sys
 import logging
 
@@ -121,11 +122,13 @@ class AIService:
             self.target_model = DQN()
             self.target_model.load_state_dict(self.model.state_dict())
             # 使用AdamW优化器（带权重衰减，防止过拟合）
-            self.optimizer = optim.AdamW(self.model.parameters(), lr=0.0003, weight_decay=0.01)
+            # 降低权重衰减，避免过度正则化
+            self.optimizer = optim.AdamW(self.model.parameters(), lr=0.0003, weight_decay=0.001)
             # 使用Huber Loss（对异常值更鲁棒）
             self.criterion = nn.SmoothL1Loss()
-            # 学习率调度器（逐渐降低学习率）
-            self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=1000, gamma=0.95)
+            # 学习率调度器（更慢的衰减，保持学习能力）
+            # 每2000步衰减一次，而不是1000步
+            self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=2000, gamma=0.95)
         else:
             self.model = None
             self.target_model = None
@@ -134,13 +137,15 @@ class AIService:
         self.replay_buffer = deque(maxlen=50000)
         # epsilon参数
         self.epsilon = 1.0  # 从高探索开始
-        self.epsilon_min = 0.05
+        self.epsilon_min = 0.15  # 提高最小值，保持更多探索（从0.1提升到0.15）
         self.epsilon_decay = 0.9995  # 更缓慢的衰减
         # 训练参数
         self.gamma = 0.99
         self.batch_size = 128  # 更大的batch size，训练更稳定
         self.train_count = 0
         self.update_target_every = 100  # 更频繁更新目标网络
+        self.save_every = 1000  # 每1000步自动保存一次模型
+        self.last_save_count = 0  # 上次保存的训练步数
         # 优先经验回放参数（可选）
         self.use_prioritized_replay = False  # 暂时关闭，简化实现
         
@@ -277,21 +282,33 @@ class AIService:
         
         batch = random.sample(self.replay_buffer, self.batch_size)
         
-        states = torch.FloatTensor([t['state'] for t in batch])
-        actions = torch.LongTensor([t['action'] for t in batch])
-        rewards = torch.FloatTensor([t['reward'] for t in batch])
-        next_states = torch.FloatTensor([
+        # 使用 numpy.stack 提高转换效率
+        states_np = np.stack([t['state'] for t in batch])
+        actions_np = np.array([t['action'] for t in batch], dtype=np.int64)
+        rewards_np = np.array([t['reward'] for t in batch], dtype=np.float32)
+        next_states_np = np.stack([
             t['next_state'] if t['next_state'] is not None else np.zeros_like(t['state']) 
             for t in batch
         ])
-        dones = torch.FloatTensor([t['done'] for t in batch])
+        dones_np = np.array([t['done'] for t in batch], dtype=np.float32)
+        
+        # 转换为 tensor（更快）
+        states = torch.from_numpy(states_np)
+        actions = torch.from_numpy(actions_np)
+        rewards = torch.from_numpy(rewards_np)
+        next_states = torch.from_numpy(next_states_np)
+        dones = torch.from_numpy(dones_np)
         
         # 计算当前 Q 值
         current_q = self.model(states).gather(1, actions.unsqueeze(1)).squeeze(1)
         
-        # 使用目标网络计算目标 Q 值（Double DQN）
+        # 正确的 Double DQN 实现：
+        # 1. 先用主网络选择动作
+        # 2. 再用目标网络评估Q值
+        # 这样可以避免Q值高估
         with torch.no_grad():
-            next_q = self.target_model(next_states).max(1)[0]
+            next_actions = self.model(next_states).max(1)[1].unsqueeze(1)
+            next_q = self.target_model(next_states).gather(1, next_actions).squeeze(1)
             target_q = rewards + self.gamma * next_q * (1 - dones)
         
         # 计算损失并更新
@@ -300,9 +317,14 @@ class AIService:
         loss.backward()
         
         # 梯度裁剪（防止梯度爆炸）
-        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=10.0)
+        # 降低max_norm，使梯度更新更敏感
+        grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
         
         self.optimizer.step()
+        
+        # 监控梯度（每100次训练记录一次）
+        if self.train_count % 100 == 0 and grad_norm < 0.001:
+            logger.warning(f"⚠️  Gradient too small: {grad_norm:.6f}, model may not be learning!")
         
         # epsilon 衰减（指数衰减到最小值）
         self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
@@ -315,13 +337,26 @@ class AIService:
         # 定期打印训练信息
         if self.train_count % 20 == 0:
             current_lr = self.optimizer.param_groups[0]['lr']
-            logger.info(f"🔥 Train #{self.train_count}: loss={loss.item():.6f}, epsilon={self.epsilon:.3f}, lr={current_lr:.6f}, buffer={len(self.replay_buffer)}")
+            # 计算平均Q值，监控模型输出
+            avg_q = current_q.mean().item()
+            avg_target_q = target_q.mean().item()
+            logger.info(f"🔥 Train #{self.train_count}: loss={loss.item():.6f}, epsilon={self.epsilon:.3f}, lr={current_lr:.6f}, buffer={len(self.replay_buffer)}, avg_q={avg_q:.3f}, avg_target_q={avg_target_q:.3f}")
+        
+        # 自动保存模型
+        if self.train_count - self.last_save_count >= self.save_every:
+            self.save_model()
+            # 同时保存一个带时间戳的备份
+            backup_path = f'mahjong_dqn_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pth'
+            self.save_model(backup_path)
+            self.last_save_count = self.train_count
+            logger.info(f"💾 Auto-saved model (train_count={self.train_count})")
         
         return loss.item()
     
     def save_model(self, path='mahjong_dqn.pth'):
         """保存模型"""
         if HAS_TORCH:
+            current_lr = self.optimizer.param_groups[0]['lr']
             torch.save({
                 'model_state_dict': self.model.state_dict(),
                 'target_model_state_dict': self.target_model.state_dict(),
@@ -330,21 +365,54 @@ class AIService:
                 'epsilon': self.epsilon,
                 'train_count': self.train_count,
                 'buffer_size': len(self.replay_buffer),
+                'learning_rate': current_lr,  # 保存当前学习率
             }, path)
-            logger.info(f"💾 Model saved to {path} (train_count={self.train_count}, epsilon={self.epsilon:.3f})")
+            logger.info(f"💾 Model saved to {path} (train_count={self.train_count}, epsilon={self.epsilon:.3f}, lr={current_lr:.8f})")
     
-    def load_model(self, path='mahjong_dqn.pth'):
-        """加载模型"""
+    def load_model(self, path='mahjong_dqn.pth', reset_lr=True, reset_epsilon=True):
+        """加载模型
+        
+        Args:
+            path: 模型文件路径
+            reset_lr: 是否重置学习率（默认True，重置到0.0002）
+            reset_epsilon: 是否重置探索率（默认True，重置到0.2）
+        """
         if HAS_TORCH:
             try:
                 checkpoint = torch.load(path, weights_only=True)
                 self.model.load_state_dict(checkpoint['model_state_dict'])
                 self.target_model.load_state_dict(checkpoint['target_model_state_dict'])
                 self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-                if 'scheduler_state_dict' in checkpoint:
+                
+                # 重置学习率（如果学习率过低）
+                if reset_lr:
+                    current_lr = self.optimizer.param_groups[0]['lr']
+                    if current_lr < 0.0001:  # 如果学习率过低，重置
+                        new_lr = 0.0002  # 重置到0.0002
+                        for param_group in self.optimizer.param_groups:
+                            param_group['lr'] = new_lr
+                        logger.info(f"🔄 Learning rate reset: {current_lr:.8f} -> {new_lr:.6f}")
+                    else:
+                        logger.info(f"✅ Learning rate OK: {current_lr:.6f}")
+                
+                # 重置学习率调度器（使用新的学习率）
+                if reset_lr:
+                    self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=2000, gamma=0.95)
+                    logger.info(f"🔄 Learning rate scheduler reset")
+                elif 'scheduler_state_dict' in checkpoint:
                     self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-                self.epsilon = checkpoint.get('epsilon', 0.2)
+                
+                # 重置探索率
+                if reset_epsilon:
+                    self.epsilon = 0.2  # 重置到0.2，保持一定探索
+                    logger.info(f"🔄 Epsilon reset to: {self.epsilon:.3f}")
+                else:
+                    self.epsilon = checkpoint.get('epsilon', 0.2)
+                    # 确保epsilon不低于最小值
+                    self.epsilon = max(self.epsilon_min, self.epsilon)
+                
                 self.train_count = checkpoint.get('train_count', 0)
+                self.last_save_count = self.train_count  # 恢复上次保存的步数
                 buffer_size = checkpoint.get('buffer_size', 0)
                 logger.info(f"📂 Model loaded from {path}")
                 logger.info(f"   Train count: {self.train_count}, Epsilon: {self.epsilon:.3f}, Buffer was: {buffer_size}")
