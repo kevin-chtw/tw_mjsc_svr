@@ -34,7 +34,6 @@ type Decision struct {
 	Tile    mahjong.Tile `json:"tile"`
 	QValue  float32      `json:"q_value"`
 	Obs     []float32    `json:"obs,omitempty"`
-	Reward  float32      `json:"reward"`
 }
 
 // Step - 通过 HTTP 调用 Python AI 服务
@@ -44,7 +43,6 @@ func (ai *RichAI) Step(state *GameState) *Decision {
 	// 生成观察向量
 	feat := state.ToRichFeature()
 	obs := feat.ToVector()
-	state.SelfTurn = state.Operates.HasOperate(mahjong.OperateDiscard)
 
 	// 收集所有可行的动作
 	var candidates []*Decision
@@ -231,21 +229,6 @@ func (ai *RichAI) QueueTraining(finalState *GameState) {
 	}
 
 	shapedReward := finalScore
-	if isHu {
-		// 大幅提高胡牌奖励（提高10倍）
-		shapedReward += 100.0
-		shapedReward += float32(huMulti) * 20.0
-		if decisionSteps > 0 && decisionSteps < 50 {
-			speedBonus := (50.0 - float32(decisionSteps)) / 2.0
-			shapedReward += speedBonus
-		}
-	} else {
-		// 增加听牌奖励（鼓励尽快听牌）
-		if len(finalState.CallData) <= 0 {
-			// 减小未听牌惩罚（因为已经有步级惩罚）
-			shapedReward -= 10.0
-		}
-	}
 
 	logger.Log.Warnf("QueueTraining: isHu=%v, multi=%d,  steps=%d, shapedReward=%.2f",
 		isHu, huMulti, decisionSteps, shapedReward)
@@ -265,14 +248,15 @@ func (ai *RichAI) QueueTraining(finalState *GameState) {
 	validSteps := 0
 	// 使用折扣因子分配奖励：越接近最终结果的决策，奖励越大
 	// 例如：最后一步 100%，倒数第二步 80%，倒数第三步 64%...
-	discountFactor := float32(0.95)
+	discountFactor := float32(0.97)
 
+	totalReward := float32(0)
 	for i := 0; i < len(finalState.DecisionHistory); i++ {
 		rec := &finalState.DecisionHistory[i]
 
 		// 计算折扣后的奖励：越早的决策，折扣越多
 		stepsFromEnd := len(finalState.DecisionHistory) - 1 - i
-		reward := shapedReward*float32(math.Pow(float64(discountFactor), float64(stepsFromEnd))) + rec.Reward
+		reward := shapedReward * float32(math.Pow(float64(discountFactor), float64(stepsFromEnd)))
 
 		var nextState []float32
 		done := false
@@ -281,7 +265,7 @@ func (ai *RichAI) QueueTraining(finalState *GameState) {
 		} else {
 			done = true
 		}
-
+		totalReward += reward
 		steps = append(steps, StepTransition{
 			State:     rec.Obs,
 			Operate:   rec.Operate,
@@ -297,7 +281,7 @@ func (ai *RichAI) QueueTraining(finalState *GameState) {
 	if validSteps > 0 {
 		episode := &Episode{
 			Steps:        steps,
-			ShapedReward: shapedReward,
+			ShapedReward: totalReward,
 			IsHu:         isHu,
 			HuMulti:      huMulti,
 		}

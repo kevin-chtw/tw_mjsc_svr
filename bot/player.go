@@ -262,11 +262,6 @@ func (p *Player) requestAck(msg proto.Message) error {
 func (p *Player) discardAck(msg proto.Message) error {
 	ack := msg.(*pbmj.MJDiscardAck)
 
-	if p.gameState.PlayerMelds[int(ack.Seat)] == nil {
-		p.gameState.PlayerMelds[int(ack.Seat)] = make(map[mahjong.Tile]int)
-	}
-
-	p.gameState.PlayerMelds[int(ack.Seat)][mahjong.Tile(ack.Tile)]++
 	p.gameState.LastTile = mahjong.Tile(ack.Tile)
 	if ack.Seat == int32(p.gameState.CurrentSeat) {
 		p.gameState.Hand[mahjong.Tile(ack.Tile)]--
@@ -332,11 +327,6 @@ func (p *Player) resultAck(msg proto.Message) error {
 		}
 	}
 
-	// 设置流局标记
-	p.gameState.IsLiuJu = ack.Liuju
-	// 提交训练任务到队列（异步，不阻塞）
-	// 注意：下一局会创建新的 gameState，所以当前对象不会被修改，可以直接传递
 	ai.GetRichAI().QueueTraining(p.gameState)
-
 	return nil
 }

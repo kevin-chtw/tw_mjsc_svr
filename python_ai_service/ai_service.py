@@ -41,7 +41,7 @@ class DQN(nn.Module if HAS_TORCH else object):
     3. LayerNorm：稳定训练过程
     4. 合理的网络深度：足够表达复杂策略，但不会过拟合
     """
-    def __init__(self, input_dim=3185, hidden_dim=512, output_dim=137):
+    def __init__(self, input_dim=4356, hidden_dim=512, output_dim=137):
         if HAS_TORCH:
             super().__init__()
             

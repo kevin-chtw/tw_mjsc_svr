@@ -5,9 +5,6 @@ import (
 	"github.com/kevin-chtw/tw_proto/game/pbmj"
 )
 
-// DecisionRecord 决策记录（使用 Decision 作为别名，保持向后兼容）
-type DecisionRecord = Decision
-
 // ActionRecord 实现操作记录（根据 ack 记录的实际操作，用于生成特征）
 type ActionRecord struct {
 	Seat      int // 执行操作的玩家座位号（0-3）
@@ -17,25 +14,22 @@ type ActionRecord struct {
 
 // GameState 小型状态快照
 type GameState struct {
-	Operates        *mahjong.Operates       // 可执行操作
-	CurrentSeat     int                     // 当前玩家座位号（0-3）
-	TotalTiles      int                     // 总牌张数
-	SelfTurn        bool                    // 是否自己回合
-	LastTile        mahjong.Tile            // 最近打出的牌
-	Hand            map[mahjong.Tile]int    // 手牌（牌->数量）
-	PonTiles        map[int][]mahjong.Tile  // 碰牌信息（玩家ID->碰的牌列表）
-	KonTiles        map[int][]mahjong.Tile  // 杠牌信息（玩家ID->杠的牌列表）
-	HuTiles         map[int]mahjong.Tile    // 胡牌信息（玩家ID->胡的牌）
-	HuMultis        map[int]int64           // 胡牌番数（玩家ID->番数）
-	PlayerLacks     [4]mahjong.EColor       // 四个玩家的缺门花色
-	PlayerMelds     [4]map[mahjong.Tile]int // 各玩家的副露（座位号->牌->数量）
-	HuPlayers       []int                   // 胡牌玩家ID列表
-	DecisionHistory []DecisionRecord        // 决策历史记录（用于训练，不限制长度，不生成特征）
-	ActionHistory   []ActionRecord          // 实现操作历史记录（用于生成特征，限制60条）
+	Operates        *mahjong.Operates      // 可执行操作
+	CurrentSeat     int                    // 当前玩家座位号（0-3）
+	TotalTiles      int                    // 总牌张数
+	LastTile        mahjong.Tile           // 最近打出的牌
+	Hand            map[mahjong.Tile]int   // 手牌（牌->数量）
+	PonTiles        map[int][]mahjong.Tile // 碰牌信息（玩家ID->碰的牌列表）
+	KonTiles        map[int][]mahjong.Tile // 杠牌信息（玩家ID->杠的牌列表）
+	HuTiles         map[int]mahjong.Tile   // 胡牌信息（玩家ID->胡的牌）
+	HuMultis        map[int]int64          // 胡牌番数（玩家ID->番数）
+	PlayerLacks     [4]mahjong.EColor      // 四个玩家的缺门花色
+	HuPlayers       []int                  // 胡牌玩家ID列表
+	DecisionHistory []Decision             // 决策历史记录（用于训练，不限制长度，不生成特征）
+	ActionHistory   []ActionRecord         // 实现操作历史记录（用于生成特征，限制60条）
 	CallData        map[int32]*pbmj.CallData
 	// 终局统计信息
 	FinalScore float32 // 最终得分（包含点炮惩罚）
-	IsLiuJu    bool    // 是否流局
 }
 
 func NewGameState() *GameState {
@@ -47,48 +41,20 @@ func NewGameState() *GameState {
 		KonTiles:        make(map[int][]mahjong.Tile),
 		HuTiles:         make(map[int]mahjong.Tile),
 		HuMultis:        make(map[int]int64),
-		PlayerMelds:     [4]map[mahjong.Tile]int{make(map[mahjong.Tile]int), make(map[mahjong.Tile]int), make(map[mahjong.Tile]int), make(map[mahjong.Tile]int)},
 		HuPlayers:       []int{},
-		DecisionHistory: []DecisionRecord{},
+		DecisionHistory: []Decision{},
 		ActionHistory:   []ActionRecord{},
 		CallData:        make(map[int32]*pbmj.CallData),
 	}
 }
 
 func (s *GameState) RecordDecision(operate int, tile mahjong.Tile, obs []float32) {
-	record := DecisionRecord{
+	record := Decision{
 		Operate: operate,
 		Tile:    tile,
 		Obs:     obs,
 	}
 
-	if operate == int(mahjong.OperateDiscard) {
-		if len(s.CallData) > 0 {
-			if _, ok := s.CallData[int32(tile)]; !ok {
-				// 打不能听的牌：减小惩罚强度
-				record.Reward = -5.0
-			}
-		} else {
-			tiles := make([]mahjong.Tile, 0)
-			for t, count := range s.Hand {
-				tiles = append(tiles, mahjong.MakeTiles(t, count)...)
-			}
-
-			bestTing := 1000
-			currentTing := 1000
-			for t := range s.Hand {
-				temtiles := mahjong.RemoveElements(tiles, t, 1)
-				ting, _ := mahjong.CalcTing(temtiles, nil, nil)
-				if ting < bestTing {
-					bestTing = ting
-				}
-				if t == tile {
-					currentTing = ting
-				}
-			}
-			record.Reward = float32(bestTing-currentTing) * 5.0
-		}
-	}
 	s.DecisionHistory = append(s.DecisionHistory, record)
 }
 
@@ -101,24 +67,17 @@ func (s *GameState) RecordAction(seat int, operate int, tile mahjong.Tile) {
 	}
 	s.ActionHistory = append(s.ActionHistory, record)
 
-	// 限制历史记录最大长度为 60，超过时只保留最后60条（减少内存和计算）
-	if len(s.ActionHistory) > 60 {
-		s.ActionHistory = s.ActionHistory[len(s.ActionHistory)-60:]
+	if len(s.ActionHistory) > HistorySteps {
+		s.ActionHistory = s.ActionHistory[len(s.ActionHistory)-HistorySteps:]
 	}
 }
 
 func (s *GameState) ToRichFeature() *RichFeature {
 	r := &RichFeature{
 		Hand:          [34]float32{},
-		Furo:          [4][34]float32{}, // 使用Furo字段存储各玩家副露
-		PonInfo:       [4][34]float32{},
-		GangInfo:      [4][34]float32{},
-		HuInfo:        [4][34]float32{},
-		PlayerActions: [4]float32{},
 		PlayerLacks:   [4][3]float32{},
 		CurrentSeat:   [4]float32{},
 		TotalTiles:    0.0,
-		SelfTurn:      0.0,
 		Operates:      [5]float32{},
 		ActionHistory: [HistoryDim]float32{}, // 历史操作序列初始化为0
 	}
@@ -126,47 +85,6 @@ func (s *GameState) ToRichFeature() *RichFeature {
 	// 手牌
 	for tile, count := range s.Hand {
 		r.Hand[mahjong.ToIndex(tile)] = float32(count)
-	}
-
-	// 各玩家副露信息（存储到Furo字段）
-	for seat := range 4 {
-		if s.PlayerMelds[seat] != nil {
-			for tile, count := range s.PlayerMelds[seat] {
-				r.Furo[seat][mahjong.ToIndex(tile)] = float32(count)
-			}
-		}
-	}
-
-	// 碰牌信息
-	for seat, tiles := range s.PonTiles {
-		if seat >= 0 && seat < 4 {
-			for _, tile := range tiles {
-				r.PonInfo[seat][mahjong.ToIndex(tile)] = 1.0
-			}
-		}
-	}
-
-	// 杠牌信息
-	for seat, tiles := range s.KonTiles {
-		if seat >= 0 && seat < 4 {
-			for _, tile := range tiles {
-				r.GangInfo[seat][mahjong.ToIndex(tile)] = 1.0
-			}
-		}
-	}
-
-	// 胡牌信息
-	for seat, tile := range s.HuTiles {
-		if tile > 0 && seat >= 0 && seat < 4 {
-			r.HuInfo[seat][mahjong.ToIndex(tile)] = 1.0
-		}
-	}
-
-	// 玩家动作状态（胡牌玩家标记为1）
-	for _, seat := range s.HuPlayers {
-		if seat >= 0 && seat < 4 {
-			r.PlayerActions[seat] = 1.0
-		}
 	}
 
 	// 玩家缺门花色信息（one-hot编码）
@@ -189,11 +107,6 @@ func (s *GameState) ToRichFeature() *RichFeature {
 	// 总牌张数（归一化到0-1范围，假设最大牌数为144）
 	if s.TotalTiles > 0 {
 		r.TotalTiles = float32(s.TotalTiles) / 144.0
-	}
-
-	// 是否自己回合（0或1）
-	if s.SelfTurn {
-		r.SelfTurn = 1.0
 	}
 
 	// 设置可执行操作（one-hot编码）
@@ -222,7 +135,7 @@ func (s *GameState) ToRichFeature() *RichFeature {
 		startIdx = historyLen - HistorySteps // 只取最近 N 步
 	}
 
-	for i := 0; i < HistorySteps; i++ {
+	for i := range HistorySteps {
 		historyIdx := startIdx + i
 		offset := i * HistoryStepDim
 
