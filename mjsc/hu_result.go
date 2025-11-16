@@ -333,7 +333,7 @@ func (h *HuData) isZhongZhang() bool {
 		return false
 	}
 
-	isZhongTile := func(p int) bool { return p > 0 || p < 8 }
+	isZhongTile := func(p int) bool { return p > 0 && p < 8 }
 	return h.checkAllTiles(isZhongTile)
 }
 
