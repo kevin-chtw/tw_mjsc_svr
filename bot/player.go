@@ -20,9 +20,9 @@ type Player struct {
 	pendingReqs []*game.PendingReq
 }
 
-func NewPlayer(uid string, matchid, tableid int32) *game.BotPlayer {
+func NewPlayer(uid string, matchid, tableid int32, scorebase int64) *game.BotPlayer {
 	p := &Player{
-		BotPlayer: game.NewBotPlayer(uid, matchid, tableid),
+		BotPlayer: game.NewBotPlayer(uid, matchid, tableid, scorebase),
 		handlers:  make(map[string]func(proto.Message) error),
 		gameState: ai.NewGameState(),
 	}
@@ -318,15 +318,18 @@ func (p *Player) ponAck(msg proto.Message) error {
 
 func (p *Player) resultAck(msg proto.Message) error {
 	ack := msg.(*pbmj.MJResultAck)
-
-	// 设置终局信息到 GameState
+	used := false
 	for _, player := range ack.PlayerResults {
+		if player.WinScore != 0 {
+			used = true
+		}
 		if player.Seat == int32(p.gameState.CurrentSeat) {
-			p.gameState.FinalScore = float32(player.WinScore)
-			break
+			p.gameState.FinalScore = float32(player.WinScore / p.Scorebase)
 		}
 	}
 
-	ai.GetRichAI().QueueTraining(p.gameState)
+	if used {
+		ai.GetRichAI().QueueTraining(p.gameState)
+	}
 	return nil
 }

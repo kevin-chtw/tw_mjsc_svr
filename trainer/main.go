@@ -49,18 +49,20 @@ func main() {
 
 func train() {
 	time.Sleep(time.Second)
-	table := game.GetTableManager().LoadOrStore(1, 1)
-	table.HandleAddTable(context.Background(), &sproto.AddTableReq{
-		ScoreBase:   1,
-		GameCount:   20000,
-		PlayerCount: 4,
-		MatchType:   "trainer",
-	})
-	for i := range 4 {
-		table.HandleAddPlayer(context.Background(), &sproto.AddPlayerReq{
-			Playerid: strconv.Itoa(i + 1),
-			Bot:      true,
-			Seat:     int32(i),
+	for i := range 5 {
+		table := game.GetTableManager().LoadOrStore(1, int32(i+1))
+		table.HandleAddTable(context.Background(), &sproto.AddTableReq{
+			ScoreBase:   1,
+			GameCount:   20000,
+			PlayerCount: 4,
+			MatchType:   "trainer",
 		})
+		for j := range 4 {
+			table.HandleAddPlayer(context.Background(), &sproto.AddPlayerReq{
+				Playerid: strconv.Itoa(i*4 + j + 1),
+				Bot:      true,
+				Seat:     int32(j),
+			})
+		}
 	}
 }

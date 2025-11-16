@@ -21,7 +21,7 @@ var app pitaya.Pitaya
 
 func main() {
 	// 关闭训练模式（仅推理）
-	ai.SetTrainingMode(false)
+	ai.SetTrainingMode(true)
 
 	// 初始化 Python AI 服务客户端
 	if err := ai.InitHTTPAIClient("localhost:50051"); err != nil {
