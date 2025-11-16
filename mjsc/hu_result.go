@@ -333,48 +333,8 @@ func (h *HuData) isZhongZhang() bool {
 		return false
 	}
 
-	playData := h.PlayData
-	for _, tile := range playData.GetHandTiles() {
-		if !isZhongTile(tile) {
-			return false
-		}
-	}
-	for _, pon := range playData.GetPonGroups() {
-		if !isZhongTile(pon.Tile) {
-			return false
-		}
-	}
-	for _, kon := range playData.GetKonGroups() {
-		if !isZhongTile(kon.Tile) {
-			return false
-		}
-	}
-	return true
-}
-
-// 辅助函数：判断单张牌是否是中张
-func isZhongTile(tile mahjong.Tile) bool {
-	if tile.IsSuit() {
-		point := tile.Point()
-		return point >= 1 && point <= 7 // 在0-8范围内，1-7算中张
-	}
-	return false // 字牌不算中张
-}
-
-func (h *HuData) isJiangDui19() bool {
-	if h.Play.GetRule().GetValue(RuleJiangDui19) == 0 {
-		return false
-	}
-	tiles := h.Tiles
-	for _, tile := range tiles {
-		if tile.IsHonor() {
-			continue // 字牌算幺九
-		}
-		if point := tile.Point(); point != 1 && point != 9 {
-			return false
-		}
-	}
-	return true
+	isZhongTile := func(p int) bool { return p > 0 || p < 8 }
+	return h.checkAllTiles(isZhongTile)
 }
 
 func (h *HuData) isJueZhang() bool {
@@ -389,11 +349,38 @@ func (h *HuData) isJueZhang() bool {
 	return count >= 4
 }
 
+func (h *HuData) isJiangDui19() bool {
+	if h.Play.GetRule().GetValue(RuleJiangDui19) == 0 {
+		return false
+	}
+	is19 := func(p int) bool { return p == 0 || p == 8 }
+	return h.checkAllTiles(is19)
+}
+
 func (h *HuData) isJiangDui258() bool {
-	tiles := h.Tiles
-	for _, tile := range tiles {
-		point := tile.Point()
-		if point != 1 && point != 4 && point != 7 {
+	if h.Play.GetRule().GetValue(RuleJiangDui258) == 0 {
+		return false
+	}
+	// 允许的点数集合（麻将内部点数范围0-8，这里只允许1、4、7）
+	is258 := func(p int) bool { return p == 1 || p == 4 || p == 7 }
+	return h.checkAllTiles(is258)
+}
+
+// checkAllTiles 统一校验：手牌 + 碰 + 杠 的点数是否满足谓词
+func (h *HuData) checkAllTiles(pred func(int) bool) bool {
+	for _, t := range h.Tiles {
+		if !pred(t.Point()) {
+			return false
+		}
+	}
+	pd := h.PlayData
+	for _, g := range pd.GetPonGroups() {
+		if !pred(g.Tile.Point()) {
+			return false
+		}
+	}
+	for _, g := range pd.GetKonGroups() {
+		if !pred(g.Tile.Point()) {
 			return false
 		}
 	}

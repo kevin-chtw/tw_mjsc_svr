@@ -8,7 +8,7 @@ const (
 	RuleZiMoJiaDi   = 4    //自摸加底
 	RuleMaxMulti    = 5    //封顶倍数
 	RuleTianDiHu    = 6    //天地胡
-	RuleJiangDui19  = 7    //幺九将对
+	RuleJiangDui19  = 7    //将对19
 	RuleMQZZ        = 8    //门清中张
 	RuleYiTiaoLong  = 9    //一条龙
 	RuleJiaXinWu    = 10   //夹心五
@@ -22,5 +22,6 @@ const (
 	RuleChaGua      = 18   //擦挂
 	RuleDianKHSDP   = 19   //点杠花算点炮
 	RuleJueZhang    = 20   //绝张
+	RuleJiangDui258 = 21   //将对258
 	RuleEnd         = iota //结束
 )

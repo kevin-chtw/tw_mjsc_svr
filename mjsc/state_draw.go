@@ -78,7 +78,7 @@ func (s *StateDraw) chaJiao(seat int32) {
 			continue
 		}
 
-		maxMulti := s.maxMulti(seat)
+		maxMulti := s.maxMulti(i)
 		if maxMulti <= 0 {
 			continue
 		}

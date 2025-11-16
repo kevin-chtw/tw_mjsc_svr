@@ -21,7 +21,7 @@ func NewService() mahjong.IService {
 	s := &service{
 		tiles:        make(map[mahjong.Tile]int),
 		tiles2Men:    make(map[mahjong.Tile]int),
-		defaultRules: [RuleEnd]int{10, 8, 0, 1, 10, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1},
+		defaultRules: [RuleEnd]int{10, 8, 0, 1, 10, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1},
 		huCore:       mahjong.NewHuCore(14),
 		fdRules:      make(map[string]int32),
 	}
@@ -58,24 +58,25 @@ func (s *service) GetDefaultRules() []int {
 	return s.defaultRules[:]
 }
 func (s *service) initFdRules() {
-	s.fdRules["huansz"] = RuleSwapTile       //换三张
-	s.fdRules["zimojd"] = RuleZiMoJiaDi      //自摸加底
-	s.fdRules["maxmulti"] = RuleMaxMulti     //封顶倍数
-	s.fdRules["tiandihu"] = RuleTianDiHu     //天地胡
-	s.fdRules["jiangdui19"] = RuleJiangDui19 //幺九将对
-	s.fdRules["mqzz"] = RuleMQZZ             //门清中张
-	s.fdRules["yitiaolong"] = RuleYiTiaoLong //一条龙
-	s.fdRules["jiaxw"] = RuleJiaXinWu        //夹心五
-	s.fdRules["kabianz"] = RuleKaBianZhang   //卡边张
-	s.fdRules["zhuanyu"] = RuleZhuanYu       //呼叫转移
-	s.fdRules["chajiao"] = RuleChaJiao       //查大叫
-	s.fdRules["tuiyu"] = RuleTuiYu           //退雨
-	s.fdRules["haidi"] = RuleHaiDi           //海底捞月
-	s.fdRules["liangmen"] = RuleLiangMen     //两门
-	s.fdRules["sijbsj"] = RuleSiJBSJ         //死叫不算叫
-	s.fdRules["chagua"] = RuleChaGua         //擦挂
-	s.fdRules["diankhsdp"] = RuleDianKHSDP   //点杠花算点炮
-	s.fdRules["juezhang"] = RuleJueZhang     //绝张
+	s.fdRules["huansz"] = RuleSwapTile         //换三张
+	s.fdRules["zimojd"] = RuleZiMoJiaDi        //自摸加底
+	s.fdRules["maxmulti"] = RuleMaxMulti       //封顶倍数
+	s.fdRules["tiandihu"] = RuleTianDiHu       //天地胡
+	s.fdRules["jiangdui19"] = RuleJiangDui19   //将对19
+	s.fdRules["jiangdui258"] = RuleJiangDui258 //将对258
+	s.fdRules["mqzz"] = RuleMQZZ               //门清中张
+	s.fdRules["yitiaolong"] = RuleYiTiaoLong   //一条龙
+	s.fdRules["jiaxw"] = RuleJiaXinWu          //夹心五
+	s.fdRules["kabianz"] = RuleKaBianZhang     //卡边张
+	s.fdRules["zhuanyu"] = RuleZhuanYu         //呼叫转移
+	s.fdRules["chajiao"] = RuleChaJiao         //查大叫
+	s.fdRules["tuiyu"] = RuleTuiYu             //退雨
+	s.fdRules["haidi"] = RuleHaiDi             //海底捞月
+	s.fdRules["liangmen"] = RuleLiangMen       //两门
+	s.fdRules["sijbsj"] = RuleSiJBSJ           //死叫不算叫
+	s.fdRules["chagua"] = RuleChaGua           //擦挂
+	s.fdRules["diankhsdp"] = RuleDianKHSDP     //点杠花算点炮
+	s.fdRules["juezhang"] = RuleJueZhang       //绝张
 }
 
 func (s *service) GetFdRules() map[string]int32 {
